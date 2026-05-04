@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planning maison - {% block title %}Accueil{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FullCalendar & FontAwesome -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="brand">
+            <span>🏡 Planning maison</span>
+        </div>
+        
+        <ul class="nav-links">
+            <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                <a href="{{ url_for('index') }}"><span>📊</span> Tableau de bord</a>
+            </li>
+            <li class="nav-item {% if request.path == '/members' %}active{% endif %}">
+                <a href="{{ url_for('members_page') }}"><span>👥</span> Membres</a>
+            </li>
+            <li class="nav-item {% if request.path == '/calendar' %}active{% endif %}">
+                <a href="{{ url_for('calendar_page') }}"><span>📅</span> Calendrier</a>
+            </li>
+            <li class="nav-item {% if request.path == '/shopping' %}active{% endif %}">
+                <a href="{{ url_for('shopping_page') }}"><span>🛒</span> Liste de courses</a>
+            </li>
+            <li class="nav-item {% if request.path == '/notes' %}active{% endif %}">
+                <a href="{{ url_for('notes_page') }}"><span>📝</span> Notes</a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="save-status">
+                <i class="fas fa-cloud-upload-alt"></i> Sauvegarde auto active
+            </div>
+            <a href="{{ url_for('backup_db') }}" class="backup-link">
+                <i class="fas fa-download"></i> Sauvegarder les données
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header style="padding-bottom: 1rem; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem;">{% block page_title %}{% endblock %}</h1>
+            <div class="header-actions">
+                {% if request.path == '/members' %}
+                    <button class="btn" onclick="openModal('memberModal')"><i class="fas fa-plus"></i></button>
+                {% elif request.path == '/calendar' %}
+                    <button class="btn" onclick="openModal('eventModal')"><i class="fas fa-plus"></i></button>
+                {% elif request.path == '/notes' %}
+                    <button class="btn" onclick="openModal('noteModal')"><i class="fas fa-plus"></i></button>
+                {% elif request.path == '/shopping' %}
+                    <form id="addShoppingForm" style="display: flex; gap: 5px;">
+                        <input type="text" id="newShoppingItem" placeholder="Acheter..." required style="padding: 0.5rem; border-radius: 8px; border: 1px solid #ccc; font-size: 0.8rem;">
+                        <button type="submit" class="btn"><i class="fas fa-plus"></i></button>
+                    </form>
+                {% endif %}
+            </div>
+        </header>
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Modals (Cachés par défaut) -->
+    <div id="memberModal" class="modal">
+        <div class="modal-content card">
+            <span class="close-modal" onclick="closeModal('memberModal')">&times;</span>
+            <h2>Ajouter un Membre</h2>
+            <form id="addMemberForm">
+                <div class="form-group">
+                    <label>Prénom</label>
+                    <input type="text" id="memberName" required>
+                </div>
+                <div class="form-group">
+                    <label>Couleur</label>
+                    <input type="color" id="memberColor" value="#3498db">
+                </div>
+                <div class="form-group">
+                    <label>Avatar (Emoji)</label>
+                    <input type="text" id="memberAvatar" value="👤" maxlength="2">
+                </div>
+                <button type="submit" class="btn">Ajouter</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="noteModal" class="modal">
+        <div class="modal-content card">
+            <span class="close-modal" onclick="closeModal('noteModal')">&times;</span>
+            <h2>Nouvelle Note</h2>
+            <form id="addNoteForm">
+                <div class="form-group">
+                    <label>Titre</label>
+                    <input type="text" id="noteTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>Contenu</label>
+                    <textarea id="noteContent" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Couleur</label>
+                    <input type="color" id="noteColor" value="#f6ad55">
+                </div>
+                <button type="submit" class="btn">Sauvegarder</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Confirmation Personnalisée -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content card" style="max-width: 400px; text-align: center;">
+            <h2 id="confirmTitle">Confirmation</h2>
+            <p id="confirmMessage" style="margin: 1rem 0; color: var(--sidebar-text);"></p>
+            <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                <button id="confirmBtnYes" class="btn" style="background-color: var(--danger); flex: 1;">Supprimer</button>
+                <button id="confirmBtnNo" class="btn" style="flex: 1;" onclick="closeModal('confirmModal')">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

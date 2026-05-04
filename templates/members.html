@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block page_title %}Membres de la Famille{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" id="dashboard">
+    <div class="card" id="members" style="grid-column: 1 / -1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0;">👥 Famille</h2>
+            <button class="btn" onclick="openModal('memberModal')" style="padding: 0.5rem 1rem; font-size: 0.9rem;"><i class="fas fa-plus"></i></button>
+        </div>
+        <div class="members-list" id="membersList">
+            {% for member in members %}
+                <div class="member-avatar-container" data-id="{{ member.id }}" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <div class="member-avatar" style="background-color: {{ member.color }};" title="{{ member.name }}">
+                        {{ member.avatar }}
+                    </div>
+                    <span style="font-size: 0.8rem; font-weight: 600;">{{ member.name }}</span>
+                    <div class="member-actions" style="display: flex; gap: 5px;">
+                        <button class="btn" onclick="editMember({{ member.id }}, '{{ member.name }}', '{{ member.color }}', '{{ member.avatar }}')" style="padding: 2px 8px; font-size: 0.7rem; background-color: var(--primary);"><i class="fas fa-edit"></i></button>
+                        <button class="btn" onclick="deleteMember({{ member.id }})" style="padding: 2px 8px; font-size: 0.7rem; background-color: var(--danger);"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            {% endfor %}
+            {% if not members %}
+                <p>Aucun membre n'a été ajouté pour le moment.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifier Membre -->
+<div id="editMemberModal" class="modal">
+    <div class="modal-content card">
+        <span class="close-modal" onclick="closeModal('editMemberModal')">&times;</span>
+        <h2>Modifier le Membre</h2>
+        <form id="editMemberForm">
+            <input type="hidden" id="editMemberId">
+            <div class="form-group">
+                <label>Prénom</label>
+                <input type="text" id="editMemberName" required>
+            </div>
+            <div class="form-group">
+                <label>Couleur</label>
+                <input type="color" id="editMemberColor">
+            </div>
+            <div class="form-group">
+                <label>Avatar (Emoji)</label>
+                <input type="text" id="editMemberAvatar" maxlength="2">
+            </div>
+            <button type="submit" class="btn">Enregistrer les modifications</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

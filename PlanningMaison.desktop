@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Planning Maison
+Comment=Gestion familiale (Calendrier, Courses, Notes)
+Exec=bash -c "cd $(dirname %k) && ./run.sh"
+Icon=%k/static/logo.png
+Terminal=true
+Categories=Office;Utility;
+StartupNotify=true

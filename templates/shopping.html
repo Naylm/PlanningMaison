@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block page_title %}Liste de Courses{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" id="dashboard">
+    <div class="card fade-in" id="shopping" style="animation-delay: 0.3s; grid-column: 1 / -1;">
+        <h2>🛒 À Acheter</h2>
+        <ul class="todo-list" id="shoppingList">
+            {% for item in shopping_items %}
+                <li class="todo-item {% if item.is_completed %}completed{% endif %}" data-id="{{ item.id }}">
+                    <input type="checkbox" id="item-{{ item.id }}" {% if item.is_completed %}checked{% endif %}>
+                    <label for="item-{{ item.id }}">{{ item.name }}</label>
+                    <button class="delete-btn" onclick="deleteShoppingItem({{ item.id }})"><i class="fas fa-trash"></i></button>
+                </li>
+            {% endfor %}
+            {% if not shopping_items %}
+                <p id="emptyShopping">La liste de courses est vide. Parfait !</p>
+            {% endif %}
+        </ul>
+        <form id="addShoppingForm" style="margin-top: 15px; display: flex; gap: 10px;">
+            <input type="text" id="newShoppingItem" placeholder="Nouvel article..." required style="flex: 1; padding: 0.8rem; border-radius: 8px; border: 1px solid #ccc;">
+            <button type="submit" class="btn"><i class="fas fa-plus"></i></button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block page_title %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" id="dashboard">
+    <div class="card" id="calendar-section" style="grid-column: 1 / -1;">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<!-- Modal Ajout Événement -->
+<div id="eventModal" class="modal">
+    <div class="modal-content card">
+        <span class="close-modal" onclick="closeModal('eventModal')">&times;</span>
+        <h2>Nouvel Événement</h2>
+        <form id="addEventForm">
+            <div class="form-group">
+                <label>Titre de l'événement</label>
+                <input type="text" id="eventTitle" required>
+            </div>
+            <div class="form-group">
+                <label>Début</label>
+                <input type="datetime-local" id="eventStart" required>
+            </div>
+            <div class="form-group">
+                <label>Fin (Optionnel)</label>
+                <input type="datetime-local" id="eventEnd">
+            </div>
+            <div class="form-group">
+                <label>Assigner à un membre</label>
+                <select id="eventMember" style="padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(128,128,128,0.2); background: var(--bg-color); color: var(--text-color);">
+                    <option value="">Tous (Événement Familial)</option>
+                    {% for member in members %}
+                        <option value="{{ member.id }}">{{ member.avatar }} {{ member.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn">Enregistrer au calendrier</button>
+        </form>
+    </div>
+</div>
+<!-- Modal Détails Événement -->
+<div id="eventDetailModal" class="modal">
+    <div class="modal-content card">
+        <span class="close-modal" onclick="closeModal('eventDetailModal')">&times;</span>
+        <h2 id="detailTitle">Détails de l'événement</h2>
+        <div style="margin: 1.5rem 0;">
+            <p><strong>👤 Membre :</strong> <span id="detailMember"></span></p>
+            <p><strong>⏰ Heure :</strong> <span id="detailTime"></span></p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn" style="background-color: var(--secondary); flex: 1;" id="editEventBtn">Modifier</button>
+            <button class="btn" style="background-color: var(--danger); flex: 1;" id="deleteEventBtn">Supprimer</button>
+            <button class="btn" style="flex: 1;" onclick="closeModal('eventDetailModal')">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modification Événement -->
+<div id="editEventModal" class="modal">
+    <div class="modal-content card">
+        <span class="close-modal" onclick="closeModal('editEventModal')">&times;</span>
+        <h2>Modifier l'Événement</h2>
+        <form id="editEventForm">
+            <input type="hidden" id="editEventId">
+            <div class="form-group">
+                <label>Titre de l'événement</label>
+                <input type="text" id="editEventTitle" required>
+            </div>
+            <div class="form-group">
+                <label>Début</label>
+                <input type="datetime-local" id="editEventStart" required>
+            </div>
+            <div class="form-group">
+                <label>Fin (Optionnel)</label>
+                <input type="datetime-local" id="editEventEnd">
+            </div>
+            <div class="form-group">
+                <label>Assigner à un membre</label>
+                <select id="editEventMember" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); background: #fff; color: var(--text-color);">
+                    <option value="">Tous (Événement Familial)</option>
+                    {% for member in members %}
+                        <option value="{{ member.id }}">{{ member.avatar }} {{ member.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn">Mettre à jour</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

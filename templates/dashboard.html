@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block page_title %}Tableau de Bord{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Événements à venir -->
+    <div class="card">
+        <h3>📅 Événements à venir</h3>
+        <ul class="todo-list" style="margin-top: 10px;">
+            {% for event in events %}
+                <li class="todo-item" style="border-left: 4px solid {{ event.member.color if event.member else 'var(--primary)' }}; padding-left: 10px;">
+                    <div>
+                        <strong>{{ event.title }}</strong><br>
+                        <small>{{ event.start_time.strftime('%d/%m à %H:%M') }}</small>
+                    </div>
+                </li>
+            {% endfor %}
+            {% if not events %}
+                <p>Aucun événement prévu.</p>
+            {% endif %}
+        </ul>
+        <a href="{{ url_for('calendar_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.8rem;">Voir tout le calendrier</a>
+    </div>
+
+    <!-- Notes récentes -->
+    <div class="card">
+        <h3>📝 Notes récentes</h3>
+        <div class="notes-grid" style="margin-top: 10px; grid-template-columns: 1fr;">
+            {% for note in notes %}
+                <div class="note-card" style="background-color: {{ note.color }}; padding: 10px; margin-bottom: 5px;">
+                    <h4 style="color: #333; font-size: 0.9rem; margin: 0;">{{ note.title }}</h4>
+                    <p style="color: #444; font-size: 0.8rem; margin: 0;">{{ note.content[:50] }}{% if note.content|length > 50 %}...{% endif %}</p>
+                </div>
+            {% endfor %}
+            {% if not notes %}
+                <p>Pas de notes récentes.</p>
+            {% endif %}
+        </div>
+        <a href="{{ url_for('notes_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.8rem; background-color: var(--secondary);">Voir toutes les notes</a>
+    </div>
+
+    <!-- Courses en cours -->
+    <div class="card">
+        <h3>🛒 Liste de courses</h3>
+        <ul class="todo-list" style="margin-top: 10px;">
+            {% for item in shopping %}
+                <li class="todo-item" style="padding: 5px 0;">
+                    <span>{{ item.name }}</span>
+                </li>
+            {% endfor %}
+            {% if not shopping %}
+                <p>La liste est vide !</p>
+            {% endif %}
+        </ul>
+        <a href="{{ url_for('shopping_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.8rem;">Gérer les courses</a>
+    </div>
+</div>
+{% endblock %}
