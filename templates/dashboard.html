@@ -4,45 +4,73 @@
 
 {% block content %}
 <div class="dashboard-grid">
+
     <!-- Événements à venir -->
-    <div class="card">
+    <div class="card fade-in">
         <h3>📅 Événements à venir</h3>
         <ul class="todo-list" style="margin-top: 10px;">
             {% for event in events %}
                 <li class="todo-item" style="border-left: 4px solid {{ event.member.color if event.member else 'var(--primary)' }}; padding-left: 10px;">
                     <div>
                         <strong>{{ event.title }}</strong><br>
-                        <small>{{ event.start_time.strftime('%d/%m à %H:%M') }}</small>
+                        <small style="color:var(--sidebar-text);">{{ event.start_time.strftime('%d/%m à %H:%M') }}</small>
                     </div>
                 </li>
             {% endfor %}
             {% if not events %}
-                <p>Aucun événement prévu.</p>
+                <p style="color:var(--sidebar-text); font-size:0.9rem;">Aucun événement prévu.</p>
             {% endif %}
         </ul>
-        <a href="{{ url_for('calendar_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.8rem;">Voir tout le calendrier</a>
+        <a href="{{ url_for('calendar_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.85rem;">Voir le calendrier</a>
     </div>
 
-    <!-- Notes récentes -->
-    <div class="card">
-        <h3>📝 Notes récentes</h3>
-        <div class="notes-grid" style="margin-top: 10px; grid-template-columns: 1fr;">
-            {% for note in notes %}
-                <div class="note-card" style="background-color: {{ note.color }}; padding: 10px; margin-bottom: 5px;">
-                    <h4 style="color: #333; font-size: 0.9rem; margin: 0;">{{ note.title }}</h4>
-                    <p style="color: #444; font-size: 0.8rem; margin: 0;">{{ note.content[:50] }}{% if note.content|length > 50 %}...{% endif %}</p>
-                </div>
+    <!-- Tâches urgentes -->
+    <div class="card fade-in" style="animation-delay:0.05s;">
+        <h3>✅ Tâches à faire <span style="font-size:0.8rem; color:var(--sidebar-text);">({{ pending_tasks|length }})</span></h3>
+        <ul style="list-style:none; margin-top:10px;">
+            {% for task in pending_tasks %}
+            <li style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid rgba(0,0,0,0.05);">
+                <span class="points-badge">⭐{{ task.points }}</span>
+                <span style="flex:1; font-size:0.9rem;">{{ task.title }}</span>
+                {% if task.assignee %}<span style="font-size:0.9rem;" title="{{ task.assignee.name }}">{{ task.assignee.avatar }}</span>{% endif %}
+            </li>
             {% endfor %}
-            {% if not notes %}
-                <p>Pas de notes récentes.</p>
+            {% if not pending_tasks %}
+                <p style="color:var(--sidebar-text); font-size:0.9rem;">🎉 Rien à faire !</p>
             {% endif %}
-        </div>
-        <a href="{{ url_for('notes_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.8rem; background-color: var(--secondary);">Voir toutes les notes</a>
+        </ul>
+        <a href="{{ url_for('tasks_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.85rem; background-color: var(--success);">Gérer les tâches</a>
+    </div>
+
+    <!-- Classement du mois -->
+    <div class="card fade-in" style="animation-delay:0.1s;">
+        <h3>🏆 Classement du mois</h3>
+        {% if leaderboard %}
+        <ul class="leaderboard-list" style="margin-top:10px;">
+            {% set max_pts = leaderboard[0].points_month if leaderboard[0].points_month > 0 else 1 %}
+            {% for member in leaderboard %}
+            <li class="leaderboard-row">
+                <span class="leaderboard-pos">
+                    {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </span>
+                <span class="leaderboard-avatar">{{ member.avatar }}</span>
+                <span class="leaderboard-name">{{ member.name }}</span>
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar-fill" style="width:{{ ((member.points_month / max_pts) * 100)|int }}%; background-color:{{ member.color }};"></div>
+                </div>
+                <span class="leaderboard-pts">{{ member.points_month }} pts</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="color:var(--sidebar-text); font-size:0.9rem; margin-top:10px;">Ajoutez des membres pour voir le classement.</p>
+        {% endif %}
+        <a href="{{ url_for('tasks_page') }}" class="btn" style="margin-top:15px; width:100%; justify-content:center; font-size:0.85rem; background-color:var(--secondary);">Voir les détails</a>
     </div>
 
     <!-- Courses en cours -->
-    <div class="card">
-        <h3>🛒 Liste de courses</h3>
+    <div class="card fade-in" style="animation-delay:0.15s;">
+        <h3>🛒 Liste de courses <span style="font-size:0.8rem; color:var(--sidebar-text);">({{ shopping|length }})</span></h3>
         <ul class="todo-list" style="margin-top: 10px;">
             {% for item in shopping %}
                 <li class="todo-item" style="padding: 5px 0;">
@@ -50,10 +78,28 @@
                 </li>
             {% endfor %}
             {% if not shopping %}
-                <p>La liste est vide !</p>
+                <p style="color:var(--sidebar-text); font-size:0.9rem;">La liste est vide !</p>
             {% endif %}
         </ul>
-        <a href="{{ url_for('shopping_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.8rem;">Gérer les courses</a>
+        <a href="{{ url_for('shopping_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.85rem;">Gérer les courses</a>
     </div>
+
+    <!-- Notes récentes -->
+    <div class="card fade-in" style="animation-delay:0.2s;">
+        <h3>📝 Notes récentes</h3>
+        <div style="margin-top: 10px;">
+            {% for note in notes %}
+                <div style="background-color: {{ note.color }}; padding: 8px 12px; margin-bottom: 6px; border-radius:8px;">
+                    <div style="color: #333; font-size: 0.85rem; font-weight:600;">{{ note.title }}</div>
+                    <div style="color: #555; font-size: 0.78rem;">{{ note.content[:60] }}{% if note.content|length > 60 %}…{% endif %}</div>
+                </div>
+            {% endfor %}
+            {% if not notes %}
+                <p style="color:var(--sidebar-text); font-size:0.9rem;">Pas de notes récentes.</p>
+            {% endif %}
+        </div>
+        <a href="{{ url_for('notes_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.85rem; background-color: var(--secondary);">Voir les notes</a>
+    </div>
+
 </div>
 {% endblock %}

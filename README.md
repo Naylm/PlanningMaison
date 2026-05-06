@@ -1,49 +1,103 @@
 # 🏡 Planning Maison
 
-**Planning Maison** est une application web moderne et intuitive conçue pour simplifier l'organisation quotidienne de la famille. Gérez vos membres, votre calendrier partagé, votre liste de courses et vos notes importantes en un seul endroit.
+Application web familiale simple et rapide pour organiser le quotidien : calendrier partagé, tâches ménagères avec classement gamifié, liste de courses, et notes.
 
-![Aperçu de l'application](static/logo.png)
+---
 
-## ✨ Fonctionnalités
+## 🚀 Lancement rapide
 
-- **📊 Tableau de Bord** : Une vue d'ensemble des événements à venir, des notes récentes et des articles à acheter.
-- **👥 Gestion des Membres** : Ajoutez chaque membre de la famille avec une couleur et un avatar personnalisés.
-- **📅 Calendrier Interactif** : Un planning complet (FullCalendar) pour suivre les activités de chacun avec modification en temps réel.
-- **🛒 Liste de Courses** : Une liste partagée et interactive pour ne rien oublier au supermarché.
-- **📝 Notes & Post-its** : Un système de notes colorées pour les informations importantes ou les petits rappels.
-- **🛡️ Sauvegarde Automatique** : Toutes vos données sont enregistrées en temps réel dans une base SQLite locale.
-- **💾 Export de Sécurité** : Un bouton de backup intégré pour télécharger une copie de vos données à tout moment.
+### 🪟 Windows — double-clic
 
-## 🚀 Installation Rapide
+1. **Installez Python** si ce n'est pas déjà fait → [python.org/downloads](https://www.python.org/downloads/)  
+   ⚠️ Lors de l'installation, cochez bien **« Add Python to PATH »**
+2. **Double-cliquez** sur **`Lancer_Planning.bat`**
+3. Une fenêtre noire s'ouvre, attendez que le navigateur se lance automatiquement
+4. **Ne fermez pas la fenêtre noire** tant que vous utilisez l'appli
 
-L'application est conçue pour être **"Zero-Configuration"** pour l'utilisateur final.
+> Lancement suivants : il suffit de re-double-cliquer. L'installation est faite une seule fois.
 
-### Sur Windows 🪟
-Double-cliquez sur : 👉 **`Lancer_Planning.bat`**
-*Le script s'occupe de tout : vérification de Python, création de l'environnement virtuel et installation des dépendances.*
+---
 
-### Sur Linux 🐧
+### � Linux — terminal
+
+**Première fois uniquement :**
 ```bash
 chmod +x run.sh
+```
+
+**À chaque lancement :**
+```bash
 ./run.sh
 ```
 
-## 🛠️ Stack Technique
+Le script ouvre automatiquement le guide utilisateur et le navigateur.
 
-- **Backend** : Python, Flask, Flask-SQLAlchemy (SQLite)
-- **Frontend** : HTML5, CSS3 (Glassmorphism), JavaScript Vanilla
-- **Librairies** : FullCalendar 6, FontAwesome 6, Google Fonts (Inter)
+> Si Python est absent : `sudo apt install python3 python3-venv` (Ubuntu/Debian)
 
-## 📦 Structure du Projet
+---
 
-```text
-├── app.py              # Serveur Flask & API
-├── Lancer_Planning.bat # Launcher Windows
-├── run.sh              # Launcher Linux
-├── fredo.db           # Base de données (générée automatiquement)
-├── static/             # Assets (CSS, JS, Images)
-└── templates/          # Vues HTML
+## 💾 Sauvegarde des données
+
+Toutes les données (membres, événements, tâches, courses, notes) sont **automatiquement enregistrées** dans le fichier **`fredo.db`** situé dans ce dossier.
+
+- ✅ Le fichier est créé dès le premier lancement
+- ✅ Chaque action (ajout, modification, suppression) est sauvegardée immédiatement
+- ✅ Relancer l'application n'efface rien
+- ✅ Déplacer le dossier entier conserve toutes les données
+
+**Faire une copie de sauvegarde :**  
+Dans la barre latérale de l'appli → cliquez **« Sauvegarder les données »** pour télécharger une copie du fichier `fredo.db`.  
+Gardez cette copie dans un endroit sûr (clé USB, cloud…).
+
+> ⚠️ Ne supprimez pas `fredo.db` — c'est là que tout est stocké.
+
+---
+
+## ✨ Fonctionnalités
+
+| Section | Ce que ça fait |
+|---|---|
+| 📊 Tableau de bord | Vue d'ensemble : événements, tâches, classement, courses |
+| � Calendrier | Planning familial, cliquer sur un jour pour ajouter un événement |
+| ✅ Tâches | Tâches ménagères avec points ⭐, classement mensuel gamifié 🏆 |
+| 🛒 Courses | Liste partagée, cocher les articles, vider les cochés d'un clic |
+| 📝 Notes | Post-its colorés pour les infos importantes |
+| 👥 Membres | Profils avec avatar emoji et couleur personnalisée |
+| 🌙 Mode sombre | Bouton en haut à droite |
+
+---
+
+## � Accès depuis un téléphone / tablette
+
+1. Lancez l'application sur le PC
+2. Trouvez l'IP de votre PC (Paramètres Wi-Fi, ou tapez `ipconfig` dans un terminal Windows)
+3. Sur le téléphone (même Wi-Fi) : ouvrez **`http://VOTRE_IP:5000`**
+
+---
+
+## 📦 Structure du projet
+
+```
+PlanningMaison/
+├── app.py                  → Serveur & API
+├── fredo.db                → Base de données (NE PAS SUPPRIMER)
+├── requirements.txt        → Dépendances Python
+├── Lancer_Planning.bat     → Lancement Windows
+├── run.sh                  → Lancement Linux
+├── GUIDE_UTILISATEUR.md    → Guide complet
+├── static/
+│   ├── css/style.css
+│   └── js/main.js
+└── templates/              → Pages HTML
 ```
 
 ---
-*Développé avec ❤️ pour une organisation familiale optimale.*
+
+## 🛠️ Stack technique
+
+- **Backend** : Python 3, Flask, Flask-SQLAlchemy, SQLite
+- **Frontend** : HTML5, CSS3, JavaScript vanilla
+- **Librairies** : FullCalendar 6, FontAwesome 6, Google Fonts (Inter)
+
+---
+*Développé pour une organisation familiale simple et efficace.* 🏡

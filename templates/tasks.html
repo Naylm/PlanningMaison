@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Tâches{% endblock %}
+{% block page_title %}Tâches & Classement{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+
+    <!-- Tâches à faire -->
+    <div class="card fade-in" style="grid-column: 1 / -1;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+            <h2 style="margin:0;">✅ À faire <span style="font-size:0.9rem; color:var(--sidebar-text); font-weight:400;">({{ pending|length }})</span></h2>
+            <button class="btn" onclick="openModal('taskModal')"><i class="fas fa-plus"></i> Nouvelle tâche</button>
+        </div>
+
+        {% if pending %}
+        <ul style="list-style:none;">
+            {% for task in pending %}
+            <li class="task-item" data-id="{{ task.id }}">
+                <!-- Sélecteur de membre pour valider -->
+                <select id="doer-{{ task.id }}" style="padding:0.4rem 0.6rem; border-radius:8px; border:1px solid rgba(0,0,0,0.12); background:var(--card-bg); color:var(--text-color); font-size:0.82rem; max-width:130px;">
+                    <option value="">Qui l'a fait ?</option>
+                    {% for member in members %}
+                    <option value="{{ member.id }}">{{ member.avatar }} {{ member.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <button class="complete-btn" onclick="completeTask({{ task.id }}, 'doer-{{ task.id }}', this)" title="Marquer comme fait">
+                    <i class="fas fa-check"></i>
+                </button>
+
+                <div style="flex:1;">
+                    <span class="task-title">{{ task.title }}</span>
+                    {% if task.assignee %}
+                    <div class="task-assignee">Pour : {{ task.assignee.avatar }} {{ task.assignee.name }}</div>
+                    {% endif %}
+                </div>
+
+                <span class="points-badge">⭐ {{ task.points }} pt{{ 's' if task.points > 1 }}</span>
+
+                <button onclick="deleteTask({{ task.id }})" class="delete-btn" title="Supprimer" style="opacity:0.4; font-size:0.85rem;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="color:var(--sidebar-text); text-align:center; padding:2rem 0;">🎉 Toutes les tâches sont faites !</p>
+        {% endif %}
+    </div>
+
+    <!-- Classement du mois -->
+    <div class="card fade-in" style="animation-delay:0.1s;">
+        <h2 style="margin-bottom:1rem;">🏆 Classement du mois</h2>
+        {% if leaderboard %}
+            {% set max_pts = leaderboard[0].points_month if leaderboard[0].points_month > 0 else 1 %}
+
+            <!-- Podium top 3 -->
+            {% if leaderboard|length >= 2 %}
+            <div class="leaderboard-podium">
+                {% if leaderboard|length >= 2 %}
+                <div class="podium-item">
+                    <div class="podium-rank">🥈</div>
+                    <div class="podium-avatar" style="background-color:{{ leaderboard[1].color }};">{{ leaderboard[1].avatar }}</div>
+                    <div class="podium-name">{{ leaderboard[1].name }}</div>
+                    <div class="podium-pts">{{ leaderboard[1].points_month }} pts</div>
+                </div>
+                {% endif %}
+                <div class="podium-item first">
+                    <div class="podium-rank">🥇</div>
+                    <div class="podium-avatar" style="background-color:{{ leaderboard[0].color }};">{{ leaderboard[0].avatar }}</div>
+                    <div class="podium-name">{{ leaderboard[0].name }}</div>
+                    <div class="podium-pts">{{ leaderboard[0].points_month }} pts</div>
+                </div>
+                {% if leaderboard|length >= 3 %}
+                <div class="podium-item">
+                    <div class="podium-rank">🥉</div>
+                    <div class="podium-avatar" style="background-color:{{ leaderboard[2].color }};">{{ leaderboard[2].avatar }}</div>
+                    <div class="podium-name">{{ leaderboard[2].name }}</div>
+                    <div class="podium-pts">{{ leaderboard[2].points_month }} pts</div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Liste complète -->
+            <ul class="leaderboard-list" style="margin-top:1rem;">
+                {% for member in leaderboard %}
+                <li class="leaderboard-row">
+                    <span class="leaderboard-pos">{{ loop.index }}</span>
+                    <span class="leaderboard-avatar">{{ member.avatar }}</span>
+                    <span class="leaderboard-name">{{ member.name }}</span>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-fill" style="width:{{ ((member.points_month / max_pts) * 100)|int }}%; background-color:{{ member.color }};"></div>
+                    </div>
+                    <span class="leaderboard-pts">{{ member.points_month }} pts</span>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p style="color:var(--sidebar-text);">Pas encore de membres.</p>
+        {% endif %}
+    </div>
+
+    <!-- Tâches accomplies récentes -->
+    {% if done %}
+    <div class="card fade-in" style="animation-delay:0.2s;">
+        <h2 style="margin-bottom:1rem;">✔️ Récemment faites</h2>
+        <ul style="list-style:none;">
+            {% for task in done %}
+            <li class="task-item done" data-id="{{ task.id }}">
+                <span style="font-size:1.2rem;">{{ task.doer.avatar if task.doer else '❓' }}</span>
+                <div style="flex:1;">
+                    <span class="task-title">{{ task.title }}</span>
+                    {% if task.doer %}
+                    <div class="task-assignee">Par {{ task.doer.name }}
+                        {% if task.done_at %} · {{ task.done_at.strftime('%d/%m à %H:%M') }}{% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                <span class="points-badge">⭐ {{ task.points }}</span>
+                <button class="complete-btn done-btn" onclick="uncompleteTask({{ task.id }})" title="Remettre en attente" style="font-size:0.7rem;">
+                    <i class="fas fa-undo"></i>
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Modal Nouvelle Tâche -->
+<div id="taskModal" class="modal">
+    <div class="modal-content card">
+        <span class="close-modal" onclick="closeModal('taskModal')">&times;</span>
+        <h2>Nouvelle Tâche</h2>
+        <form id="addTaskForm">
+            <div class="form-group">
+                <label>Titre de la tâche</label>
+                <input type="text" id="taskTitle" placeholder="Ex : Faire la vaisselle" required>
+            </div>
+            <div class="form-group">
+                <label>Valeur en points</label>
+                <div class="points-selector">
+                    <label><input type="radio" name="taskPoints" value="1" checked><span class="pts-opt">⭐ 1</span></label>
+                    <label><input type="radio" name="taskPoints" value="2"><span class="pts-opt">⭐ 2</span></label>
+                    <label><input type="radio" name="taskPoints" value="3"><span class="pts-opt">⭐ 3</span></label>
+                    <label><input type="radio" name="taskPoints" value="5"><span class="pts-opt">⭐ 5</span></label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Assigner à (optionnel)</label>
+                <select id="taskMember" style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid rgba(0,0,0,0.1); background:var(--card-bg); color:var(--text-color);">
+                    <option value="">N'importe qui</option>
+                    {% for member in members %}
+                    <option value="{{ member.id }}">{{ member.avatar }} {{ member.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn" style="width:100%; justify-content:center;">Ajouter la tâche</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

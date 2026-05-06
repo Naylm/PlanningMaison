@@ -19,8 +19,19 @@
 </head>
 <body>
 
+    <!-- Hamburger button (mobile only) -->
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menu">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Dark mode toggle -->
+    <button class="dark-toggle" id="darkToggle" aria-label="Mode sombre" title="Mode sombre / clair">🌙</button>
+
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- Sidebar Navigation -->
-    <nav class="sidebar">
+    <nav class="sidebar" id="sidebar">
         <div class="brand">
             <span>🏡 Planning maison</span>
         </div>
@@ -35,8 +46,11 @@
             <li class="nav-item {% if request.path == '/calendar' %}active{% endif %}">
                 <a href="{{ url_for('calendar_page') }}"><span>📅</span> Calendrier</a>
             </li>
+            <li class="nav-item {% if request.path == '/tasks' %}active{% endif %}">
+                <a href="{{ url_for('tasks_page') }}"><span>✅</span> Tâches</a>
+            </li>
             <li class="nav-item {% if request.path == '/shopping' %}active{% endif %}">
-                <a href="{{ url_for('shopping_page') }}"><span>🛒</span> Liste de courses</a>
+                <a href="{{ url_for('shopping_page') }}"><span>🛒</span> Courses</a>
             </li>
             <li class="nav-item {% if request.path == '/notes' %}active{% endif %}">
                 <a href="{{ url_for('notes_page') }}"><span>📝</span> Notes</a>
@@ -53,6 +67,27 @@
         </div>
     </nav>
 
+    <!-- Bottom nav (mobile) -->
+    <nav class="bottom-nav">
+        <ul>
+            <li class="{% if request.path == '/' %}active{% endif %}">
+                <a href="{{ url_for('index') }}"><span class="nav-icon">📊</span>Accueil</a>
+            </li>
+            <li class="{% if request.path == '/calendar' %}active{% endif %}">
+                <a href="{{ url_for('calendar_page') }}"><span class="nav-icon">📅</span>Calendrier</a>
+            </li>
+            <li class="{% if request.path == '/tasks' %}active{% endif %}">
+                <a href="{{ url_for('tasks_page') }}"><span class="nav-icon">✅</span>Tâches</a>
+            </li>
+            <li class="{% if request.path == '/shopping' %}active{% endif %}">
+                <a href="{{ url_for('shopping_page') }}"><span class="nav-icon">🛒</span>Courses</a>
+            </li>
+            <li class="{% if request.path == '/notes' %}active{% endif %}">
+                <a href="{{ url_for('notes_page') }}"><span class="nav-icon">📝</span>Notes</a>
+            </li>
+        </ul>
+    </nav>
+
     <!-- Main Content -->
     <main class="main-content">
         <header style="padding-bottom: 1rem; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 1.5rem;">
@@ -64,11 +99,8 @@
                     <button class="btn" onclick="openModal('eventModal')"><i class="fas fa-plus"></i></button>
                 {% elif request.path == '/notes' %}
                     <button class="btn" onclick="openModal('noteModal')"><i class="fas fa-plus"></i></button>
-                {% elif request.path == '/shopping' %}
-                    <form id="addShoppingForm" style="display: flex; gap: 5px;">
-                        <input type="text" id="newShoppingItem" placeholder="Acheter..." required style="padding: 0.5rem; border-radius: 8px; border: 1px solid #ccc; font-size: 0.8rem;">
-                        <button type="submit" class="btn"><i class="fas fa-plus"></i></button>
-                    </form>
+                {% elif request.path == '/tasks' %}
+                    <button class="btn" onclick="openModal('taskModal')"><i class="fas fa-plus"></i></button>
                 {% endif %}
             </div>
         </header>

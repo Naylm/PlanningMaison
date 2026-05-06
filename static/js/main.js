@@ -2,6 +2,9 @@
 // Initialisation Globale
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+    initDarkMode();
+    initSidebarToggle();
+
     if (document.getElementById('shoppingList')) initShoppingList();
     if (document.getElementById('calendar')) initCalendar();
     
@@ -12,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFormListener('addShoppingForm', handleAddShoppingItem);
     setupFormListener('addEventForm', handleAddEvent);
     setupFormListener('editEventForm', handleUpdateEvent);
+    setupFormListener('addTaskForm', handleAddTask);
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -19,6 +23,60 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// ==========================================
+// Dark Mode
+// ==========================================
+function initDarkMode() {
+    const btn = document.getElementById('darkToggle');
+    if (!btn) return;
+    const saved = localStorage.getItem('darkMode');
+    if (saved === '1') {
+        document.body.classList.add('dark-mode');
+        btn.textContent = '☀️';
+    }
+    btn.addEventListener('click', () => {
+        const isDark = document.body.classList.toggle('dark-mode');
+        btn.textContent = isDark ? '☀️' : '🌙';
+        localStorage.setItem('darkMode', isDark ? '1' : '0');
+    });
+}
+
+// ==========================================
+// Sidebar Toggle (mobile)
+// ==========================================
+function initSidebarToggle() {
+    const toggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (!toggle || !sidebar) return;
+
+    toggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('show');
+    });
+    overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+    });
+}
+
+// ==========================================
+// Confetti
+// ==========================================
+function spawnConfetti(x, y) {
+    const colors = ['#f6ad55','#48bb78','#4a90e2','#f56565','#9f7aea','#ed64a6'];
+    for (let i = 0; i < 12; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.left = (x + (Math.random() - 0.5) * 80) + 'px';
+        el.style.top = (y + (Math.random() - 0.5) * 40) + 'px';
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        el.style.transform = `rotate(${Math.random()*360}deg)`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 900);
+    }
+}
 
 function setupFormListener(id, handler) {
     const form = document.getElementById(id);
@@ -289,6 +347,14 @@ function initCalendar() {
             const avatar = info.event.extendedProps.member_avatar || '🏡';
             info.el.setAttribute('title', `${avatar} ${info.event.title}\n👤 Membre : ${member}\n⏰ Heure : ${start}`);
         },
+        dateClick: function(info) {
+            const clicked = info.dateStr;
+            const startInput = document.getElementById('eventStart');
+            if (startInput) {
+                startInput.value = clicked.length === 10 ? clicked + 'T08:00' : clicked.slice(0,16);
+            }
+            openModal('eventModal');
+        },
         eventClick: function(info) {
             const start = info.event.start.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
             const member = info.event.extendedProps.member_name || 'Tous';
@@ -383,5 +449,63 @@ async function handleUpdateEvent(e) {
         if(window.fcCalendar) window.fcCalendar.refetchEvents();
         closeModal('editEventModal');
         showToast('Événement mis à jour');
+    }
+}
+
+// ==========================================
+// API & Fonctions Tâches
+// ==========================================
+async function handleAddTask(e) {
+    e.preventDefault();
+    const title = document.getElementById('taskTitle').value.trim();
+    const points = document.querySelector('input[name="taskPoints"]:checked')?.value || 1;
+    const assigned_to = document.getElementById('taskMember')?.value || '';
+
+    const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, points: parseInt(points), assigned_to })
+    });
+    if (res.ok) {
+        closeModal('taskModal');
+        showToast('Tâche ajoutée !');
+        location.reload();
+    }
+}
+
+window.completeTask = async function(taskId, memberSelectId, btnEl) {
+    const member_id = document.getElementById(memberSelectId)?.value || '';
+    if (!member_id) {
+        showToast('Choisis qui a fait la tâche !', 'warning');
+        document.getElementById(memberSelectId)?.focus();
+        return;
+    }
+    const res = await fetch(`/api/tasks/${taskId}/complete`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ member_id: parseInt(member_id) })
+    });
+    if (res.ok) {
+        const rect = btnEl.getBoundingClientRect();
+        spawnConfetti(rect.left + rect.width / 2, rect.top);
+        showToast('Tâche accomplie ! 🎉');
+        setTimeout(() => location.reload(), 600);
+    }
+}
+
+window.uncompleteTask = async function(taskId) {
+    const res = await fetch(`/api/tasks/${taskId}/uncomplete`, { method: 'PUT' });
+    if (res.ok) location.reload();
+}
+
+window.deleteTask = async function(taskId) {
+    const confirmed = await customConfirm('Supprimer la tâche', 'Voulez-vous vraiment supprimer cette tâche ?');
+    if (confirmed) {
+        const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+        if (res.ok) {
+            const el = document.querySelector(`.task-item[data-id="${taskId}"]`);
+            if (el) el.remove();
+            showToast('Tâche supprimée', 'danger');
+        }
     }
 }

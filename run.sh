@@ -1,60 +1,90 @@
 #!/bin/bash
+set -e
 
-# Couleurs pour les messages
+# ── Couleurs ─────────────────────────────────────────────
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-echo -e "${BLUE}==========================================${NC}"
-echo -e "${BLUE}       LANCEMENT DE PLANNING MAISON       ${NC}"
-echo -e "${BLUE}==========================================${NC}"
+# ── Se placer dans le dossier du script ──────────────────
+cd "$(dirname "$0")"
+
+echo
+echo -e "${BLUE} ============================================${NC}"
+echo -e "${BLUE}   Planning Maison  -  Lancement             ${NC}"
+echo -e "${BLUE} ============================================${NC}"
 echo
 
-# 1. Détection de Python
-echo -e "[1/4] Vérification de Python..."
+# ── Ouvrir le guide utilisateur ──────────────────────────
+echo -e " Ouverture du guide utilisateur..."
+if command -v xdg-open &>/dev/null; then
+    xdg-open GUIDE_UTILISATEUR.md 2>/dev/null || true
+elif command -v open &>/dev/null; then
+    open GUIDE_UTILISATEUR.md 2>/dev/null || true
+fi
+
+# ── 1. Python ────────────────────────────────────────────
+echo -e " [1/4] Vérification de Python..."
 if command -v python3 &>/dev/null; then
     PYTHON_CMD=python3
 elif command -v python &>/dev/null; then
     PYTHON_CMD=python
 else
-    echo -e "${RED}[!] ERREUR : Python n'est pas installé.${NC}"
-    echo "Installez-le avec : sudo apt install python3"
+    echo -e "${RED} [!] ERREUR : Python 3 n'est pas installé.${NC}"
+    echo -e "     Installez-le avec :"
+    echo -e "       Ubuntu/Debian : ${YELLOW}sudo apt install python3 python3-venv${NC}"
+    echo -e "       Fedora        : ${YELLOW}sudo dnf install python3${NC}"
+    echo -e "       Arch          : ${YELLOW}sudo pacman -S python${NC}"
     exit 1
 fi
-echo -e "      - Python détecté."
+echo -e " [OK] $($PYTHON_CMD --version)"
+echo
 
-# 2. Vérification du module venv
-$PYTHON_CMD -m venv --help &>/dev/null
-if [ $? -ne 0 ]; then
-    echo -e "${RED}[!] ERREUR : Le module Python 'venv' est manquant.${NC}"
-    echo "Installez-le avec : sudo apt install python3-venv"
+# ── 2. Module venv ───────────────────────────────────────
+if ! $PYTHON_CMD -m venv --help &>/dev/null; then
+    echo -e "${RED} [!] ERREUR : Module 'venv' manquant.${NC}"
+    echo -e "     Installez-le avec : ${YELLOW}sudo apt install python3-venv${NC}"
     exit 1
 fi
 
-# 3. Création de l'environnement virtuel si inexistant
-echo -e "[2/4] Vérification de l'environnement virtuel..."
-if [ ! -d "venv" ]; then
-    echo -e "      - Création de l'environnement (patience)..."
+# ── 3. Environnement virtuel ─────────────────────────────
+echo -e " [2/4] Préparation de l'environnement..."
+if [ ! -f "venv/bin/python" ]; then
+    echo -e "       Création en cours, patience (1ère fois seulement)..."
     $PYTHON_CMD -m venv venv
 fi
-echo -e "      - Environnement prêt."
+echo -e " [OK] Environnement prêt."
+echo
 
-# 4. Installation des dépendances
-echo -e "[3/4] Mise à jour des composants..."
-./venv/bin/pip install --upgrade pip --quiet
-./venv/bin/pip install -r requirements.txt --quiet
-echo -e "      - Composants à jour."
+# ── 4. Dépendances ───────────────────────────────────────
+echo -e " [3/4] Mise à jour des composants..."
+venv/bin/pip install --upgrade pip --quiet
+venv/bin/pip install -r requirements.txt --quiet
+echo -e " [OK] Composants à jour."
+echo
 
-# 5. Lancement
-echo -e "[4/4] Lancement de l'application..."
+# ── 5. Lancement ─────────────────────────────────────────
+echo -e " [4/4] Lancement de l'application..."
+
+# Ouvrir le navigateur après 2 secondes
 if command -v xdg-open &>/dev/null; then
-    (sleep 2 && xdg-open http://127.0.0.1:5000) &
+    (sleep 2 && xdg-open http://127.0.0.1:5000 2>/dev/null) &
+elif command -v open &>/dev/null; then
+    (sleep 2 && open http://127.0.0.1:5000) &
 fi
 
-echo -e "\n${GREEN}------------------------------------------${NC}"
-echo -e " L'application démarre sur http://127.0.0.1:5000"
-echo -e " NE FERMEZ PAS CE TERMINAL"
-echo -e "${GREEN}------------------------------------------${NC}\n"
+echo
+echo -e "${GREEN} ============================================${NC}"
+echo -e "${GREEN}  Accès : http://127.0.0.1:5000             ${NC}"
+echo -e "${GREEN}  NE FERMEZ PAS CE TERMINAL                 ${NC}"
+echo -e "${GREEN}  (Ctrl+C pour arrêter)                     ${NC}"
+echo -e "${GREEN} ============================================${NC}"
+echo
 
-./venv/bin/python app.py
+venv/bin/python app.py
+
+echo
+echo -e "${YELLOW} Application arrêtée. Données sauvegardées dans fredo.db${NC}"
+echo

@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timezone
 import os
+from sqlalchemy import func
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -42,16 +43,31 @@ class Event(db.Model):
     member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
     member = db.relationship('Member', backref=db.backref('events', lazy=True))
 
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    points = db.Column(db.Integer, default=1)
+    assigned_to = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
+    is_done = db.Column(db.Boolean, default=False)
+    done_by = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    done_at = db.Column(db.DateTime, nullable=True)
+    assignee = db.relationship('Member', foreign_keys=[assigned_to], backref=db.backref('assigned_tasks', lazy=True))
+    doer = db.relationship('Member', foreign_keys=[done_by], backref=db.backref('done_tasks', lazy=True))
+
 # ==========================================
 # Routes
 # ==========================================
 
 @app.route('/')
 def index():
-    upcoming_events = Event.query.filter(Event.start_time >= datetime.utcnow()).order_by(Event.start_time.asc()).limit(3).all()
+    now = datetime.now(timezone.utc)
+    upcoming_events = Event.query.filter(Event.start_time >= now).order_by(Event.start_time.asc()).limit(3).all()
     recent_notes = Note.query.order_by(Note.created_at.desc()).limit(3).all()
     shopping_items = ShoppingItem.query.filter_by(is_completed=False).limit(5).all()
-    return render_template('dashboard.html', events=upcoming_events, notes=recent_notes, shopping=shopping_items)
+    pending_tasks = Task.query.filter_by(is_done=False).order_by(Task.points.desc()).limit(5).all()
+    leaderboard = _get_leaderboard()
+    return render_template('dashboard.html', events=upcoming_events, notes=recent_notes, shopping=shopping_items, pending_tasks=pending_tasks, leaderboard=leaderboard)
 
 @app.route('/members')
 def members_page():
@@ -72,6 +88,14 @@ def shopping_page():
 def notes_page():
     notes = Note.query.order_by(Note.created_at.desc()).all()
     return render_template('notes.html', notes=notes)
+
+@app.route('/tasks')
+def tasks_page():
+    members = Member.query.all()
+    pending = Task.query.filter_by(is_done=False).order_by(Task.points.desc()).all()
+    done = Task.query.filter_by(is_done=True).order_by(Task.done_at.desc()).limit(20).all()
+    leaderboard = _get_leaderboard()
+    return render_template('tasks.html', members=members, pending=pending, done=done, leaderboard=leaderboard)
 
 # API: Membres
 @app.route('/api/members', methods=['POST'])
@@ -148,6 +172,86 @@ def delete_note(note_id):
     db.session.commit()
     return jsonify({'success': True})
 
+# API: Tâches
+@app.route('/api/tasks', methods=['GET'])
+def get_tasks():
+    tasks = Task.query.order_by(Task.is_done.asc(), Task.points.desc()).all()
+    return jsonify([_task_to_dict(t) for t in tasks])
+
+@app.route('/api/tasks', methods=['POST'])
+def add_task():
+    data = request.json
+    task = Task(
+        title=data['title'],
+        points=int(data.get('points', 1)),
+        assigned_to=data.get('assigned_to') or None
+    )
+    db.session.add(task)
+    db.session.commit()
+    return jsonify(_task_to_dict(task)), 201
+
+@app.route('/api/tasks/<int:task_id>/complete', methods=['PUT'])
+def complete_task(task_id):
+    data = request.json
+    task = Task.query.get_or_404(task_id)
+    task.is_done = True
+    task.done_by = data.get('member_id') or None
+    task.done_at = datetime.now(timezone.utc)
+    db.session.commit()
+    return jsonify(_task_to_dict(task))
+
+@app.route('/api/tasks/<int:task_id>/uncomplete', methods=['PUT'])
+def uncomplete_task(task_id):
+    task = Task.query.get_or_404(task_id)
+    task.is_done = False
+    task.done_by = None
+    task.done_at = None
+    db.session.commit()
+    return jsonify(_task_to_dict(task))
+
+@app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    task = Task.query.get_or_404(task_id)
+    db.session.delete(task)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/leaderboard')
+def get_leaderboard():
+    return jsonify(_get_leaderboard())
+
+def _get_leaderboard():
+    now = datetime.now(timezone.utc)
+    members = Member.query.all()
+    result = []
+    for m in members:
+        pts = db.session.query(func.sum(Task.points)).filter(
+            Task.done_by == m.id,
+            Task.is_done == True,
+            func.strftime('%Y-%m', Task.done_at) == now.strftime('%Y-%m')
+        ).scalar() or 0
+        total_pts = db.session.query(func.sum(Task.points)).filter(
+            Task.done_by == m.id,
+            Task.is_done == True
+        ).scalar() or 0
+        result.append({'id': m.id, 'name': m.name, 'avatar': m.avatar, 'color': m.color, 'points_month': pts, 'points_total': total_pts})
+    result.sort(key=lambda x: x['points_month'], reverse=True)
+    return result
+
+def _task_to_dict(task):
+    return {
+        'id': task.id,
+        'title': task.title,
+        'points': task.points,
+        'is_done': task.is_done,
+        'assigned_to': task.assigned_to,
+        'assignee_name': task.assignee.name if task.assignee else None,
+        'assignee_avatar': task.assignee.avatar if task.assignee else None,
+        'done_by': task.done_by,
+        'doer_name': task.doer.name if task.doer else None,
+        'done_at': task.done_at.isoformat() if task.done_at else None
+    }
+
 # API: Événements (Calendrier)
 @app.route('/api/events', methods=['GET'])
 def get_events():
@@ -191,17 +295,14 @@ def add_event():
         'borderColor': color
     })
 
-@app.route('/api/events/<int:event_id>', methods=['DELETE'])
 @app.route('/api/events/<int:event_id>', methods=['PUT'])
 def update_event(event_id):
     data = request.json
     event = Event.query.get_or_404(event_id)
-    
     event.title = data['title']
     event.start_time = datetime.fromisoformat(data['start_time'])
     event.end_time = datetime.fromisoformat(data['end_time']) if data.get('end_time') else event.start_time
     event.member_id = data.get('member_id') if data.get('member_id') else None
-    
     db.session.commit()
     return jsonify({'success': True})
 
