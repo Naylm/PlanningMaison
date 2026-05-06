@@ -42,7 +42,21 @@ class Event(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
+    member_ids = db.Column(db.Text, nullable=True)
     member = db.relationship('Member', backref=db.backref('events', lazy=True))
+
+    def get_member_ids(self):
+        import json
+        if self.member_ids:
+            try: return json.loads(self.member_ids)
+            except: pass
+        return [self.member_id] if self.member_id else []
+
+    def set_member_ids(self, ids):
+        import json
+        ids = [i for i in ids if i]
+        self.member_ids = json.dumps(ids) if ids else None
+        self.member_id = ids[0] if ids else None
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -263,10 +277,16 @@ def _task_to_dict(task):
 # API: Événements (Calendrier)
 @app.route('/api/events', methods=['GET'])
 def get_events():
+    import json as _json
     events = Event.query.all()
+    all_members = {m.id: m for m in Member.query.all()}
     events_data = []
     for event in events:
-        color = event.member.color if event.member else '#4a90e2'
+        ids = event.get_member_ids()
+        members_info = [all_members[i] for i in ids if i in all_members]
+        color = members_info[0].color if members_info else '#4a90e2'
+        names = ', '.join(m.name for m in members_info) if members_info else 'Tous'
+        avatars = ' '.join(m.avatar for m in members_info) if members_info else '🏡'
         events_data.append({
             'id': event.id,
             'title': event.title,
@@ -275,9 +295,11 @@ def get_events():
             'backgroundColor': color,
             'borderColor': color,
             'extendedProps': {
+                'member_ids': ids,
                 'member_id': event.member_id,
-                'member_name': event.member.name if event.member else 'Tous',
-                'member_avatar': event.member.avatar if event.member else '🏡'
+                'member_name': names,
+                'member_avatar': avatars,
+                'members_info': [{'id': m.id, 'name': m.name, 'avatar': m.avatar, 'color': m.color} for m in members_info]
             }
         })
     return jsonify(events_data)
@@ -287,21 +309,17 @@ def add_event():
     data = request.json
     start_time = datetime.fromisoformat(data['start_time'])
     end_time = datetime.fromisoformat(data['end_time']) if data.get('end_time') else start_time
-    member_id = data.get('member_id')
-    
-    new_event = Event(title=data['title'], start_time=start_time, end_time=end_time, member_id=member_id if member_id else None)
+    ids = [int(i) for i in data.get('member_ids', []) if i]
+    if not ids and data.get('member_id'):
+        ids = [int(data['member_id'])]
+    new_event = Event(title=data['title'], start_time=start_time, end_time=end_time)
+    new_event.set_member_ids(ids)
     db.session.add(new_event)
     db.session.commit()
-    
     color = new_event.member.color if new_event.member else '#4a90e2'
-    return jsonify({
-        'id': new_event.id,
-        'title': new_event.title,
-        'start': new_event.start_time.isoformat(),
-        'end': new_event.end_time.isoformat(),
-        'backgroundColor': color,
-        'borderColor': color
-    })
+    return jsonify({'id': new_event.id, 'title': new_event.title,
+        'start': new_event.start_time.isoformat(), 'end': new_event.end_time.isoformat(),
+        'backgroundColor': color, 'borderColor': color})
 
 @app.route('/api/events/<int:event_id>', methods=['PUT'])
 def update_event(event_id):
@@ -310,7 +328,10 @@ def update_event(event_id):
     event.title = data['title']
     event.start_time = datetime.fromisoformat(data['start_time'])
     event.end_time = datetime.fromisoformat(data['end_time']) if data.get('end_time') else event.start_time
-    event.member_id = data.get('member_id') if data.get('member_id') else None
+    ids = [int(i) for i in data.get('member_ids', []) if i]
+    if not ids and data.get('member_id'):
+        ids = [int(data['member_id'])]
+    event.set_member_ids(ids)
     db.session.commit()
     return jsonify({'success': True})
 

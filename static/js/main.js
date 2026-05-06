@@ -492,9 +492,9 @@ function initCalendar() {
         events: '/api/events',
         eventDidMount: function(info) {
             const start = info.event.start.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-            const member = info.event.extendedProps.member_name || 'Tous';
-            const avatar = info.event.extendedProps.member_avatar || '🏡';
-            info.el.setAttribute('title', `${avatar} ${info.event.title}\n👤 Membre : ${member}\n⏰ Heure : ${start}`);
+            const members = info.event.extendedProps.members_info || [];
+            const names = members.length > 0 ? members.map(m => m.name).join(', ') : 'Tous';
+            info.el.setAttribute('title', `${info.event.title}\n� ${names}\n⏰ ${start}`);
         },
         dateClick: function(info) {
             const clicked = info.dateStr;
@@ -504,14 +504,35 @@ function initCalendar() {
             }
             openModal('eventModal');
         },
+        eventContent: function(arg) {
+            const props = arg.event.extendedProps;
+            const members = props.members_info || [];
+            let avatarHtml = '';
+            if (members.length > 0) {
+                avatarHtml = '<span class="fc-event-avatars">' +
+                    members.map(m => `<span title="${m.name}">${m.avatar}</span>`).join('') +
+                    '</span>';
+            }
+            return { html: `<span class="fc-event-title">${arg.event.title}${avatarHtml}</span>` };
+        },
         eventClick: function(info) {
             const start = info.event.start.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-            const member = info.event.extendedProps.member_name || 'Tous';
-            const avatar = info.event.extendedProps.member_avatar || '🏡';
-            
-            document.getElementById('detailTitle').innerText = `${avatar} ${info.event.title}`;
-            document.getElementById('detailMember').innerText = member;
+            const props = info.event.extendedProps;
+            const members = props.members_info || [];
+            const memberName = members.length > 0 ? members.map(m => m.name).join(', ') : 'Tous';
+
+            document.getElementById('detailTitle').innerText = info.event.title;
+            document.getElementById('detailMember').innerText = memberName;
             document.getElementById('detailTime').innerText = start;
+
+            const avatarsEl = document.getElementById('detailMembersAvatars');
+            if (avatarsEl) {
+                avatarsEl.innerHTML = members.map(m =>
+                    `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;background:${m.color}22;border:1.5px solid ${m.color};font-size:0.8rem;">
+                        <span style="font-size:1rem">${m.avatar}</span> ${m.name}
+                    </span>`
+                ).join('');
+            }
             
             const deleteBtn = document.getElementById('deleteEventBtn');
             deleteBtn.onclick = async () => {
@@ -532,25 +553,19 @@ function initCalendar() {
                 document.getElementById('editEventId').value = event.id;
                 document.getElementById('editEventTitle').value = event.title;
                 
-                // Formater la date pour datetime-local (YYYY-MM-DDTHH:mm)
-                const start = new Date(event.start);
-                start.setMinutes(start.getMinutes() - start.getTimezoneOffset());
-                document.getElementById('editEventStart').value = start.toISOString().slice(0, 16);
+                const s = new Date(event.start);
+                s.setMinutes(s.getMinutes() - s.getTimezoneOffset());
+                document.getElementById('editEventStart').value = s.toISOString().slice(0, 16);
                 
                 if (event.end) {
-                    const end = new Date(event.end);
-                    end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
-                    document.getElementById('editEventEnd').value = end.toISOString().slice(0, 16);
+                    const e = new Date(event.end);
+                    e.setMinutes(e.getMinutes() - e.getTimezoneOffset());
+                    document.getElementById('editEventEnd').value = e.toISOString().slice(0, 16);
                 } else {
                     document.getElementById('editEventEnd').value = '';
                 }
-                
-                // Note: member_id n'est pas directement dans event, mais on peut le stocker dans extendedProps
-                // Si non présent, on essaie de matcher le nom du membre (moins précis)
-                // Idéalement, l'API devrait renvoyer le member_id dans extendedProps
-                // Je vais mettre à jour l'API get_events pour inclure member_id
-                document.getElementById('editEventMember').value = event.extendedProps.member_id || '';
-                
+
+                setCheckedMemberIds('editEventMemberChecks', props.member_ids || []);
                 closeModal('eventDetailModal');
                 openModal('editEventModal');
             };
@@ -562,21 +577,57 @@ function initCalendar() {
     window.fcCalendar = calendar;
 }
 
+// ── Helpers multi-membres ───────────────────────────────
+window.getCheckedMemberIds = function(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+    return [...container.querySelectorAll('input.event-member-cb:checked')].map(cb => parseInt(cb.value));
+}
+
+window.toggleAllMembers = function(containerId, allCb) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.querySelectorAll('input.event-member-cb').forEach(cb => {
+        cb.checked = false;
+    });
+}
+
+window.syncAllCheckbox = function(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const allCb = container.querySelector('input[type="checkbox"]:not(.event-member-cb)');
+    const anyChecked = container.querySelectorAll('input.event-member-cb:checked').length > 0;
+    if (allCb) allCb.checked = !anyChecked;
+}
+
+function setCheckedMemberIds(containerId, ids) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const allCb = container.querySelector('input[type="checkbox"]:not(.event-member-cb)');
+    container.querySelectorAll('input.event-member-cb').forEach(cb => {
+        cb.checked = ids.includes(parseInt(cb.value));
+    });
+    if (allCb) allCb.checked = ids.length === 0;
+}
+// ────────────────────────────────────────────────────────
+
 async function handleAddEvent(e) {
     e.preventDefault();
     const title = document.getElementById('eventTitle').value;
     const start_time = document.getElementById('eventStart').value;
     const end_time = document.getElementById('eventEnd').value;
-    const member_id = document.getElementById('eventMember').value;
+    const member_ids = getCheckedMemberIds('eventMemberChecks');
 
     const res = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, start_time, end_time, member_id })
+        body: JSON.stringify({ title, start_time, end_time, member_ids })
     });
     if (res.ok) {
         if(window.fcCalendar) window.fcCalendar.refetchEvents();
         closeModal('eventModal');
+        document.getElementById('addEventForm').reset();
+        setCheckedMemberIds('eventMemberChecks', []);
         showToast('Événement ajouté au calendrier');
     }
 }
@@ -587,12 +638,12 @@ async function handleUpdateEvent(e) {
     const title = document.getElementById('editEventTitle').value;
     const start_time = document.getElementById('editEventStart').value;
     const end_time = document.getElementById('editEventEnd').value;
-    const member_id = document.getElementById('editEventMember').value;
+    const member_ids = getCheckedMemberIds('editEventMemberChecks');
 
     const res = await fetch(`/api/events/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, start_time, end_time, member_id })
+        body: JSON.stringify({ title, start_time, end_time, member_ids })
     });
     if (res.ok) {
         if(window.fcCalendar) window.fcCalendar.refetchEvents();

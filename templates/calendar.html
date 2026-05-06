@@ -28,15 +28,23 @@
                 <input type="datetime-local" id="eventEnd">
             </div>
             <div class="form-group">
-                <label>Assigner à un membre</label>
-                <select id="eventMember" style="padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(128,128,128,0.2); background: var(--bg-color); color: var(--text-color);">
-                    <option value="">Tous (Événement Familial)</option>
+                <label>Participants</label>
+                <div class="member-checkboxes" id="eventMemberChecks">
+                    <label class="member-check-item member-check-all">
+                        <input type="checkbox" id="eventMemberAll" checked onchange="toggleAllMembers('eventMemberChecks', this)">
+                        <span class="member-check-avatar">🏡</span>
+                        <span>Tous (familial)</span>
+                    </label>
                     {% for member in members %}
-                        <option value="{{ member.id }}">{{ member.avatar }} {{ member.name }}</option>
+                    <label class="member-check-item" style="--mc:{{ member.color }};">
+                        <input type="checkbox" class="event-member-cb" value="{{ member.id }}" onchange="syncAllCheckbox('eventMemberChecks')">
+                        <span class="member-check-avatar" style="background:{{ member.color }}">{{ member.avatar }}</span>
+                        <span>{{ member.name }}</span>
+                    </label>
                     {% endfor %}
-                </select>
+                </div>
             </div>
-            <button type="submit" class="btn">Enregistrer au calendrier</button>
+            <button type="submit" class="btn" style="width:100%;justify-content:center;">Enregistrer au calendrier</button>
         </form>
     </div>
 </div>
@@ -46,7 +54,8 @@
         <span class="close-modal" onclick="closeModal('eventDetailModal')">&times;</span>
         <h2 id="detailTitle">Détails de l'événement</h2>
         <div style="margin: 1.5rem 0;">
-            <p><strong>👤 Membre :</strong> <span id="detailMember"></span></p>
+            <p><strong>� Participants :</strong> <span id="detailMember"></span></p>
+        <div id="detailMembersAvatars" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;"></div>
             <p><strong>⏰ Heure :</strong> <span id="detailTime"></span></p>
         </div>
         <div style="display: flex; gap: 10px;">
@@ -77,15 +86,23 @@
                 <input type="datetime-local" id="editEventEnd">
             </div>
             <div class="form-group">
-                <label>Assigner à un membre</label>
-                <select id="editEventMember" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); background: #fff; color: var(--text-color);">
-                    <option value="">Tous (Événement Familial)</option>
+                <label>Participants</label>
+                <div class="member-checkboxes" id="editEventMemberChecks">
+                    <label class="member-check-item member-check-all">
+                        <input type="checkbox" id="editEventMemberAll" checked onchange="toggleAllMembers('editEventMemberChecks', this)">
+                        <span class="member-check-avatar">🏡</span>
+                        <span>Tous (familial)</span>
+                    </label>
                     {% for member in members %}
-                        <option value="{{ member.id }}">{{ member.avatar }} {{ member.name }}</option>
+                    <label class="member-check-item" style="--mc:{{ member.color }};">
+                        <input type="checkbox" class="event-member-cb" value="{{ member.id }}" onchange="syncAllCheckbox('editEventMemberChecks')">
+                        <span class="member-check-avatar" style="background:{{ member.color }}">{{ member.avatar }}</span>
+                        <span>{{ member.name }}</span>
+                    </label>
                     {% endfor %}
-                </select>
+                </div>
             </div>
-            <button type="submit" class="btn">Mettre à jour</button>
+            <button type="submit" class="btn" style="width:100%;justify-content:center;">Mettre à jour</button>
         </form>
     </div>
 </div>
