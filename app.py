@@ -290,8 +290,8 @@ def get_events():
         events_data.append({
             'id': event.id,
             'title': event.title,
-            'start': event.start_time.isoformat(),
-            'end': event.end_time.isoformat(),
+            'start': event.start_time.isoformat() + 'Z',
+            'end': event.end_time.isoformat() + 'Z',
             'backgroundColor': color,
             'borderColor': color,
             'extendedProps': {
@@ -318,7 +318,7 @@ def add_event():
     db.session.commit()
     color = new_event.member.color if new_event.member else '#4a90e2'
     return jsonify({'id': new_event.id, 'title': new_event.title,
-        'start': new_event.start_time.isoformat(), 'end': new_event.end_time.isoformat(),
+        'start': new_event.start_time.isoformat() + 'Z', 'end': new_event.end_time.isoformat() + 'Z',
         'backgroundColor': color, 'borderColor': color})
 
 @app.route('/api/events/<int:event_id>', methods=['PUT'])

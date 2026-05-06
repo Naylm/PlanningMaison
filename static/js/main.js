@@ -482,6 +482,7 @@ function initCalendar() {
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         locale: 'fr',
+        timeZone: 'local',
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -553,14 +554,13 @@ function initCalendar() {
                 document.getElementById('editEventId').value = event.id;
                 document.getElementById('editEventTitle').value = event.title;
                 
-                const s = new Date(event.start);
-                s.setMinutes(s.getMinutes() - s.getTimezoneOffset());
-                document.getElementById('editEventStart').value = s.toISOString().slice(0, 16);
-                
+                function toLocalInput(d) {
+                    const off = d.getTimezoneOffset() * 60000;
+                    return new Date(d - off).toISOString().slice(0, 16);
+                }
+                document.getElementById('editEventStart').value = toLocalInput(new Date(event.start));
                 if (event.end) {
-                    const e = new Date(event.end);
-                    e.setMinutes(e.getMinutes() - e.getTimezoneOffset());
-                    document.getElementById('editEventEnd').value = e.toISOString().slice(0, 16);
+                    document.getElementById('editEventEnd').value = toLocalInput(new Date(event.end));
                 } else {
                     document.getElementById('editEventEnd').value = '';
                 }
@@ -611,11 +611,16 @@ function setCheckedMemberIds(containerId, ids) {
 }
 // ────────────────────────────────────────────────────────
 
+function localInputToUTC(val) {
+    if (!val) return '';
+    return new Date(val).toISOString();
+}
+
 async function handleAddEvent(e) {
     e.preventDefault();
     const title = document.getElementById('eventTitle').value;
-    const start_time = document.getElementById('eventStart').value;
-    const end_time = document.getElementById('eventEnd').value;
+    const start_time = localInputToUTC(document.getElementById('eventStart').value);
+    const end_time = localInputToUTC(document.getElementById('eventEnd').value);
     const member_ids = getCheckedMemberIds('eventMemberChecks');
 
     const res = await fetch('/api/events', {
@@ -636,8 +641,8 @@ async function handleUpdateEvent(e) {
     e.preventDefault();
     const id = document.getElementById('editEventId').value;
     const title = document.getElementById('editEventTitle').value;
-    const start_time = document.getElementById('editEventStart').value;
-    const end_time = document.getElementById('editEventEnd').value;
+    const start_time = localInputToUTC(document.getElementById('editEventStart').value);
+    const end_time = localInputToUTC(document.getElementById('editEventEnd').value);
     const member_ids = getCheckedMemberIds('editEventMemberChecks');
 
     const res = await fetch(`/api/events/${id}`, {
