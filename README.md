@@ -69,7 +69,60 @@ Gardez cette copie dans un endroit sûr (clé USB, cloud…).
 
 ## 📱 Accès depuis un téléphone / tablette (même Wi-Fi)
 
-1. **Lancez l'application** sur le PC avec `Lancer_Planning.bat`
+### Prérequis : autoriser le pare-feu
+
+Si l'appli ne s'ouvre pas depuis le téléphone, le pare-feu bloque l'accès. Voici comment l'autoriser :
+
+#### 🪟 Windows
+
+1. **Paramètres Windows** → **Sécurité** → **Pare-feu et protection réseau**
+2. Cliquez sur **"Autoriser une application via le pare-feu"**
+3. Cliquez sur **"Modifier les paramètres"** (en haut)
+4. Cliquez sur **"Autoriser une autre application..."**
+5. Cliquez sur **"Parcourir..."** et sélectionnez :
+
+   ```text
+   C:\Users\VOTRE_NOM\Desktop\PlanningMaison\venv\Scripts\python.exe
+   ```
+
+6. Cliquez sur **"Ajouter"**
+7. Cochez les cases **"Réseau privé"** et **"Réseau public"** pour cette ligne
+8. Cliquez sur **"OK"**
+
+#### 🐧 Linux (Ubuntu / Debian)
+
+```bash
+# Autoriser le port 5000
+sudo ufw allow 5000
+
+# Vérifier que c'est actif
+sudo ufw status
+```
+
+#### 🐧 Linux (Fedora / CentOS / RHEL)
+
+```bash
+sudo firewall-cmd --permanent --add-port=5000/tcp
+sudo firewall-cmd --reload
+```
+
+#### 🍎 macOS
+
+```bash
+# Ouvrir les préférences du pare-feu
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+
+# Autoriser Python (si nécessaire)
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/bin/python3
+```
+
+Ou via l'interface graphique : **Préférences Système** → **Sécurité et confidentialité** → **Pare-feu** → **Options du pare-feu** → ajoutez Python.
+
+---
+
+### Connexion depuis le téléphone
+
+1. **Lancez l'application** sur le PC avec `Lancer_Planning.bat` (Windows) ou `./run.sh` (Linux)
 
 2. **Dans la fenêtre noire**, regardez la ligne affichée :
 
@@ -112,7 +165,7 @@ Pour que Planning Maison ressemble à une vraie application sur votre téléphon
 
 ---
 
-## �📦 Structure du projet
+## �� Structure du projet
 
 ```text
 PlanningMaison/
