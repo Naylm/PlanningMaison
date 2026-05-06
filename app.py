@@ -290,6 +290,12 @@ def delete_task(task_id):
     db.session.commit()
     return jsonify({'success': True})
 
+@app.route('/api/tasks/reset-points', methods=['POST'])
+def reset_points():
+    Task.query.filter_by(is_done=True).delete()
+    db.session.commit()
+    return jsonify({'success': True})
+
 @app.route('/api/leaderboard')
 def get_leaderboard():
     return jsonify(_get_leaderboard())

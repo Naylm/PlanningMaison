@@ -703,6 +703,19 @@ window.uncompleteTask = async function(taskId) {
     if (res.ok) location.reload();
 }
 
+window.resetPoints = async function() {
+    const confirmed = await customConfirm(
+        '⚠️ Réinitialiser les points',
+        'Cela va supprimer toutes les tâches terminées et remettre le classement à zéro. Cette action est irréversible.'
+    );
+    if (!confirmed) return;
+    const res = await fetch('/api/tasks/reset-points', { method: 'POST' });
+    if (res.ok) {
+        showToast('Points réinitialisés ✅');
+        setTimeout(() => location.reload(), 800);
+    }
+}
+
 window.deleteTask = async function(taskId) {
     const confirmed = await customConfirm('Supprimer la tâche', 'Voulez-vous vraiment supprimer cette tâche ?');
     if (confirmed) {

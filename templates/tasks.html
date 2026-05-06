@@ -51,7 +51,12 @@
 
     <!-- Classement du mois -->
     <div class="card fade-in" style="animation-delay:0.1s;">
-        <h2 style="margin-bottom:1rem;">🏆 Classement du mois</h2>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+            <h2 style="margin:0;">🏆 Classement du mois</h2>
+            <button class="btn" onclick="resetPoints()" style="background:var(--danger); padding:0.35rem 0.8rem; font-size:0.78rem; gap:5px;">
+                <i class="fas fa-rotate-left"></i> Réinitialiser
+            </button>
+        </div>
         {% if leaderboard %}
             {% set max_pts = leaderboard[0].points_month if leaderboard[0].points_month > 0 else 1 %}
 
