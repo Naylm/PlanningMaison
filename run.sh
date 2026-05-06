@@ -75,9 +75,21 @@ elif command -v open &>/dev/null; then
     (sleep 2 && open http://127.0.0.1:5000) &
 fi
 
+# Récupérer l'IP locale
+LAN_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}')
+if [ -z "$LAN_IP" ]; then
+    LAN_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+fi
+
 echo
 echo -e "${GREEN} ============================================${NC}"
-echo -e "${GREEN}  Accès : http://127.0.0.1:5000             ${NC}"
+echo -e "${GREEN}  Ce laptop   : http://127.0.0.1:5000       ${NC}"
+if [ -n "$LAN_IP" ]; then
+echo -e "${GREEN}                                             ${NC}"
+echo -e "${GREEN}  Téléphone / tablette (même Wi-Fi) :       ${NC}"
+echo -e "${GREEN}  📡 http://${LAN_IP}:5000          ${NC}"
+fi
+echo -e "${GREEN}                                             ${NC}"
 echo -e "${GREEN}  NE FERMEZ PAS CE TERMINAL                 ${NC}"
 echo -e "${GREEN}  (Ctrl+C pour arrêter)                     ${NC}"
 echo -e "${GREEN} ============================================${NC}"

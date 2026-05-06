@@ -57,11 +57,26 @@ if %errorlevel% neq 0 (
 echo  [OK] Composants installes.
 echo.
 
-:: ── 4. Lancement ───────────────────────────────────
+:: ── 4. Lancement ───────────────────────────────────────
 echo  [4/4] Lancement de l'application...
 echo.
+
+:: Recuperer l'IP locale (Wi-Fi ou Ethernet)
+for /f "tokens=2 delims=:" %%A in ('ipconfig ^| findstr /C:"IPv4" ^| findstr /V "127.0.0.1"') do (
+    set LAN_IP=%%A
+    goto :found_ip
+)
+:found_ip
+set LAN_IP=%LAN_IP: =%
+
 echo  ============================================
 echo   Ouverture sur http://127.0.0.1:5000
+echo.
+echo   Depuis un telephone / tablette / autre PC
+echo   sur le MEME Wi-Fi, ouvrir :
+echo.
+echo     http://%LAN_IP%:5000
+echo.
 echo   NE FERMEZ PAS cette fenetre !
 echo   (fermez-la pour arreter l'application)
 echo  ============================================
