@@ -1057,25 +1057,41 @@ body.dark-mode .fc .fc-button-primary:disabled {
     word-break: break-word;
 }
 
-.menu-delete-btn {
+.menu-meal-actions {
+    display: none;
     position: absolute;
-    top: -2px;
-    right: -2px;
-    background: var(--danger);
+    top: -4px;
+    right: -4px;
+    gap: 3px;
+    align-items: center;
+}
+
+.menu-meal:hover .menu-meal-actions { display: flex; }
+
+.menu-cart-btn,
+.menu-delete-btn {
+    background: var(--primary);
     color: #fff;
     border: none;
     border-radius: 50%;
-    width: 16px;
-    height: 16px;
-    font-size: 0.55rem;
+    width: 18px;
+    height: 18px;
+    font-size: 0.58rem;
     cursor: pointer;
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
+    transition: var(--transition);
 }
 
-.menu-meal:hover .menu-delete-btn { display: flex; }
+.menu-cart-btn:hover { background: #27ae60; transform: scale(1.1); }
+
+.menu-delete-btn {
+    background: var(--danger);
+}
+
+.menu-delete-btn:hover { transform: scale(1.1); }
 
 .menu-empty {
     flex: 1;

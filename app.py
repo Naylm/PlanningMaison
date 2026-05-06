@@ -80,6 +80,7 @@ class Meal(db.Model):
     week = db.Column(db.String(8), nullable=False)  # 'YYYY-WNN'
     title = db.Column(db.String(150), nullable=False)
     notes = db.Column(db.Text, nullable=True)
+    ingredients = db.Column(db.Text, nullable=True)  # une ligne = un ingrédient
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -394,6 +395,10 @@ def delete_event(event_id):
     return jsonify({'success': True})
 
 # API: Menu
+def _meal_dict(m):
+    return {'id': m.id, 'day': m.day, 'slot': m.slot, 'week': m.week,
+            'title': m.title, 'notes': m.notes, 'ingredients': m.ingredients or ''}
+
 @app.route('/api/meals', methods=['GET'])
 def get_meals():
     week = request.args.get('week')
@@ -401,7 +406,7 @@ def get_meals():
         from datetime import date as _date
         week = _date.today().strftime('%G-W%V')
     meals = Meal.query.filter_by(week=week).all()
-    return jsonify([{'id': m.id, 'day': m.day, 'slot': m.slot, 'week': m.week, 'title': m.title, 'notes': m.notes} for m in meals])
+    return jsonify([_meal_dict(m) for m in meals])
 
 @app.route('/api/meals', methods=['POST'])
 def add_meal():
@@ -410,13 +415,15 @@ def add_meal():
     if existing:
         existing.title = data['title']
         existing.notes = data.get('notes', '')
+        existing.ingredients = data.get('ingredients', '')
         db.session.commit()
         m = existing
     else:
-        m = Meal(day=int(data['day']), slot=data['slot'], week=data['week'], title=data['title'], notes=data.get('notes', ''))
+        m = Meal(day=int(data['day']), slot=data['slot'], week=data['week'],
+                 title=data['title'], notes=data.get('notes', ''), ingredients=data.get('ingredients', ''))
         db.session.add(m)
         db.session.commit()
-    return jsonify({'id': m.id, 'day': m.day, 'slot': m.slot, 'week': m.week, 'title': m.title, 'notes': m.notes})
+    return jsonify(_meal_dict(m))
 
 @app.route('/api/meals/<int:meal_id>', methods=['PUT'])
 def update_meal(meal_id):
@@ -424,8 +431,23 @@ def update_meal(meal_id):
     m = Meal.query.get_or_404(meal_id)
     m.title = data['title']
     m.notes = data.get('notes', m.notes)
+    m.ingredients = data.get('ingredients', m.ingredients or '')
     db.session.commit()
-    return jsonify({'id': m.id, 'title': m.title, 'notes': m.notes})
+    return jsonify(_meal_dict(m))
+
+@app.route('/api/meals/<int:meal_id>/to-cart', methods=['POST'])
+def meal_to_cart(meal_id):
+    m = Meal.query.get_or_404(meal_id)
+    if not m.ingredients:
+        return jsonify({'added': 0})
+    lines = [l.strip() for l in m.ingredients.splitlines() if l.strip()]
+    added = 0
+    for line in lines:
+        item = ShoppingItem(name=line)
+        db.session.add(item)
+        added += 1
+    db.session.commit()
+    return jsonify({'added': added})
 
 @app.route('/api/meals/<int:meal_id>', methods=['DELETE'])
 def delete_meal(meal_id):

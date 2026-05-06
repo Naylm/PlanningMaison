@@ -37,7 +37,7 @@
         <div class="menu-slot">
             <div class="menu-slot-header">
                 <span>{{ slot_icon }} {{ slot_label }}</span>
-                <button class="menu-add-btn" onclick="openMealModal({{ i }}, '{{ slot }}', '{{ week_key }}', {{ meal.id if meal else 'null' }}, '{{ meal.title|replace("'","\\'") if meal else '' }}', '{{ (meal.notes or '')|replace("'","\\'") if meal else '' }}')" title="{{ 'Modifier' if meal else 'Ajouter' }}">
+                <button class="menu-add-btn" onclick="openMealModal({{ i }}, '{{ slot }}', '{{ week_key }}', {{ meal.id if meal else 'null' }}, '{{ meal.title|replace("'","\\'") if meal else '' }}', '{{ (meal.notes or '')|replace("'","\\'") if meal else '' }}', '{{ (meal.ingredients or '')|replace("'","\\'") if meal else '' }}')" title="{{ 'Modifier' if meal else 'Ajouter' }}">
                     <i class="fas fa-{{ 'pen' if meal else 'plus' }}"></i>
                 </button>
             </div>
@@ -45,7 +45,12 @@
             <div class="menu-meal" id="meal-{{ i }}-{{ slot }}">
                 <div class="menu-meal-title">{{ meal.title }}</div>
                 {% if meal.notes %}<div class="menu-meal-notes">{{ meal.notes }}</div>{% endif %}
-                <button class="menu-delete-btn" onclick="deleteMeal({{ meal.id }}, {{ i }}, '{{ slot }}')" title="Supprimer"><i class="fas fa-times"></i></button>
+                <div class="menu-meal-actions">
+                    {% if meal.ingredients %}
+                    <button class="menu-cart-btn" onclick="mealToCart({{ meal.id }}, '{{ meal.title|replace("'","\\'") }}')" title="Ajouter les ingrédients aux courses"><i class="fas fa-cart-plus"></i></button>
+                    {% endif %}
+                    <button class="menu-delete-btn" onclick="deleteMeal({{ meal.id }}, {{ i }}, '{{ slot }}')" title="Supprimer"><i class="fas fa-times"></i></button>
+                </div>
             </div>
             {% else %}
             <div class="menu-empty" id="meal-{{ i }}-{{ slot }}">
@@ -73,8 +78,12 @@
                 <input type="text" id="mealTitle" placeholder="Ex : Poulet rôti, Pasta bolognaise…" required autocomplete="off">
             </div>
             <div class="form-group">
+                <label>Ingrédients <span style="font-size:0.75rem; color:var(--sidebar-text); font-weight:400;">(1 par ligne → 🛒 Ajouter aux courses)</span></label>
+                <textarea id="mealIngredients" rows="3" placeholder="Poulet 500g&#10;Crème fraîche&#10;Champignons" style="resize:vertical; font-size:0.85rem;"></textarea>
+            </div>
+            <div class="form-group">
                 <label>Notes (optionnel)</label>
-                <textarea id="mealNotes" rows="2" placeholder="Ingrédients, remarques…" style="resize:vertical;"></textarea>
+                <textarea id="mealNotes" rows="2" placeholder="Remarques, temps de cuisson…" style="resize:vertical;"></textarea>
             </div>
             <div style="display:flex; gap:10px;">
                 <button type="submit" class="btn" style="flex:1; justify-content:center;">
@@ -92,13 +101,14 @@
 <script>
 const SLOT_LABELS = { midi: '☀️ Déjeuner', soir: '🌙 Dîner' };
 
-window.openMealModal = function(day, slot, week, mealId, title, notes) {
+window.openMealModal = function(day, slot, week, mealId, title, notes, ingredients) {
     document.getElementById('mealId').value = mealId || '';
     document.getElementById('mealDay').value = day;
     document.getElementById('mealSlot').value = slot;
     document.getElementById('mealWeek').value = week;
     document.getElementById('mealTitle').value = (title && title !== 'null') ? title : '';
     document.getElementById('mealNotes').value = (notes && notes !== 'null') ? notes : '';
+    document.getElementById('mealIngredients').value = (ingredients && ingredients !== 'null') ? ingredients : '';
     document.getElementById('mealModalTitle').textContent = mealId ? 'Modifier le repas' : 'Ajouter un repas';
     document.getElementById('mealSlotLabel').textContent = SLOT_LABELS[slot] || slot;
     openModal('mealModal');
@@ -113,7 +123,8 @@ window.handleSaveMeal = async function(e) {
         slot: document.getElementById('mealSlot').value,
         week: document.getElementById('mealWeek').value,
         title: document.getElementById('mealTitle').value.trim(),
-        notes: document.getElementById('mealNotes').value.trim()
+        notes: document.getElementById('mealNotes').value.trim(),
+        ingredients: document.getElementById('mealIngredients').value.trim()
     };
     const url = id ? `/api/meals/${id}` : '/api/meals';
     const method = id ? 'PUT' : 'POST';
@@ -129,6 +140,18 @@ window.deleteMeal = async function(id, day, slot) {
     if (!confirmed) return;
     const res = await fetch(`/api/meals/${id}`, { method: 'DELETE' });
     if (res.ok) location.reload();
+};
+
+window.mealToCart = async function(id, title) {
+    const res = await fetch(`/api/meals/${id}/to-cart`, { method: 'POST' });
+    if (res.ok) {
+        const data = await res.json();
+        if (data.added > 0) {
+            showToast(`🛒 ${data.added} ingrédient${data.added > 1 ? 's' : ''} ajouté${data.added > 1 ? 's' : ''} aux courses !`);
+        } else {
+            showToast('Aucun ingrédient à ajouter', 'warning');
+        }
+    }
 };
 </script>
 {% endblock %}
