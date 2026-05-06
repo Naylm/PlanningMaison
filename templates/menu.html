@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block page_title %}🍽️ Menu de la semaine{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom:1.5rem;">
+
+    <!-- Navigation semaine -->
+    <div class="menu-week-nav">
+        <a href="{{ url_for('menu_page', week=prev_week) }}" class="btn" style="padding:0.4rem 0.9rem;">&#8592;</a>
+        <div style="text-align:center;">
+            <div style="font-size:1rem; font-weight:700;">Semaine {{ week_key.split('-W')[1] }}</div>
+            <div style="font-size:0.82rem; color:var(--sidebar-text);">
+                Du {{ week_start.strftime('%d/%m') }} au {{ (week_start + timedelta_7).__format__('%d/%m/%Y') }}
+            </div>
+        </div>
+        <a href="{{ url_for('menu_page', week=next_week) }}" class="btn" style="padding:0.4rem 0.9rem;">&#8594;</a>
+        {% if week_key != today.strftime('%G-W%V') %}
+        <a href="{{ url_for('menu_page') }}" class="btn" style="background:var(--secondary); padding:0.4rem 0.9rem; font-size:0.8rem;">Aujourd'hui</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Grille semaine -->
+<div class="menu-grid">
+    {% for day_name in days %}
+    {% set i = loop.index0 %}
+    {% set date_of_day = week_start + timedelta(days=i) %}
+    {% set is_today = (date_of_day == today) %}
+    <div class="menu-day-col {% if is_today %}menu-day-today{% endif %}">
+        <div class="menu-day-header">
+            <span class="menu-day-name">{{ day_name }}</span>
+            <span class="menu-day-date">{{ date_of_day.strftime('%d/%m') }}</span>
+        </div>
+
+        {% for slot, slot_label, slot_icon in [('midi','Déjeuner','☀️'), ('soir','Dîner','🌙')] %}
+        {% set meal = meals_map.get((i, slot)) %}
+        <div class="menu-slot">
+            <div class="menu-slot-header">
+                <span>{{ slot_icon }} {{ slot_label }}</span>
+                <button class="menu-add-btn" onclick="openMealModal({{ i }}, '{{ slot }}', '{{ week_key }}', {{ meal.id if meal else 'null' }}, '{{ meal.title|replace("'","\\'") if meal else '' }}', '{{ (meal.notes or '')|replace("'","\\'") if meal else '' }}')" title="{{ 'Modifier' if meal else 'Ajouter' }}">
+                    <i class="fas fa-{{ 'pen' if meal else 'plus' }}"></i>
+                </button>
+            </div>
+            {% if meal %}
+            <div class="menu-meal" id="meal-{{ i }}-{{ slot }}">
+                <div class="menu-meal-title">{{ meal.title }}</div>
+                {% if meal.notes %}<div class="menu-meal-notes">{{ meal.notes }}</div>{% endif %}
+                <button class="menu-delete-btn" onclick="deleteMeal({{ meal.id }}, {{ i }}, '{{ slot }}')" title="Supprimer"><i class="fas fa-times"></i></button>
+            </div>
+            {% else %}
+            <div class="menu-empty" id="meal-{{ i }}-{{ slot }}">
+                <span>—</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Ajouter/Modifier repas -->
+<div id="mealModal" class="modal">
+    <div class="modal-content card" style="max-width:420px;">
+        <span class="close-modal" onclick="closeModal('mealModal')">&times;</span>
+        <h2 id="mealModalTitle">Ajouter un repas</h2>
+        <form id="mealForm" onsubmit="handleSaveMeal(event)">
+            <input type="hidden" id="mealId">
+            <input type="hidden" id="mealDay">
+            <input type="hidden" id="mealSlot">
+            <input type="hidden" id="mealWeek">
+            <div class="form-group">
+                <label id="mealSlotLabel">Repas</label>
+                <input type="text" id="mealTitle" placeholder="Ex : Poulet rôti, Pasta bolognaise…" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Notes (optionnel)</label>
+                <textarea id="mealNotes" rows="2" placeholder="Ingrédients, remarques…" style="resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="btn" style="flex:1; justify-content:center;">
+                    <i class="fas fa-check"></i> Enregistrer
+                </button>
+                <button type="button" class="btn" style="background:var(--bg-color); color:var(--text-color); border:1px solid rgba(128,128,128,0.2); flex:1; justify-content:center;" onclick="closeModal('mealModal')">Annuler</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const SLOT_LABELS = { midi: '☀️ Déjeuner', soir: '🌙 Dîner' };
+
+window.openMealModal = function(day, slot, week, mealId, title, notes) {
+    document.getElementById('mealId').value = mealId || '';
+    document.getElementById('mealDay').value = day;
+    document.getElementById('mealSlot').value = slot;
+    document.getElementById('mealWeek').value = week;
+    document.getElementById('mealTitle').value = (title && title !== 'null') ? title : '';
+    document.getElementById('mealNotes').value = (notes && notes !== 'null') ? notes : '';
+    document.getElementById('mealModalTitle').textContent = mealId ? 'Modifier le repas' : 'Ajouter un repas';
+    document.getElementById('mealSlotLabel').textContent = SLOT_LABELS[slot] || slot;
+    openModal('mealModal');
+    document.getElementById('mealTitle').focus();
+};
+
+window.handleSaveMeal = async function(e) {
+    e.preventDefault();
+    const id = document.getElementById('mealId').value;
+    const payload = {
+        day: parseInt(document.getElementById('mealDay').value),
+        slot: document.getElementById('mealSlot').value,
+        week: document.getElementById('mealWeek').value,
+        title: document.getElementById('mealTitle').value.trim(),
+        notes: document.getElementById('mealNotes').value.trim()
+    };
+    const url = id ? `/api/meals/${id}` : '/api/meals';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if (res.ok) {
+        closeModal('mealModal');
+        location.reload();
+    }
+};
+
+window.deleteMeal = async function(id, day, slot) {
+    const confirmed = await customConfirm('Supprimer le repas', 'Voulez-vous supprimer ce repas ?');
+    if (!confirmed) return;
+    const res = await fetch(`/api/meals/${id}`, { method: 'DELETE' });
+    if (res.ok) location.reload();
+};
+</script>
+{% endblock %}

@@ -55,6 +55,9 @@
             <li class="nav-item {% if request.path == '/notes' %}active{% endif %}">
                 <a href="{{ url_for('notes_page') }}"><span>📝</span> Notes</a>
             </li>
+            <li class="nav-item {% if request.path == '/menu' %}active{% endif %}">
+                <a href="{{ url_for('menu_page') }}"><span>🍽️</span> Menu</a>
+            </li>
         </ul>
 
         <div class="sidebar-footer">
@@ -84,6 +87,9 @@
             </li>
             <li class="{% if request.path == '/notes' %}active{% endif %}">
                 <a href="{{ url_for('notes_page') }}"><span class="nav-icon">📝</span>Notes</a>
+            </li>
+            <li class="{% if request.path == '/menu' %}active{% endif %}">
+                <a href="{{ url_for('menu_page') }}"><span class="nav-icon">🍽️</span>Menu</a>
             </li>
         </ul>
     </nav>

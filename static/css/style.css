@@ -934,3 +934,185 @@ body.dark-mode .fc .fc-button-primary:disabled {
     .modal-content { width: 95%; }
     .card { padding: 1rem; border-radius: 14px; }
 }
+
+/* ==========================================
+   Menu de la semaine
+   ========================================== */
+.menu-week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+.menu-day-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.menu-day-header {
+    text-align: center;
+    padding: 6px 4px;
+    border-radius: 10px;
+    background: var(--bg-color);
+    border: 1.5px solid rgba(128,128,128,0.1);
+}
+
+.menu-day-name {
+    display: block;
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-color);
+}
+
+.menu-day-date {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--sidebar-text);
+    margin-top: 1px;
+}
+
+.menu-day-today .menu-day-header {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.menu-day-today .menu-day-name,
+.menu-day-today .menu-day-date {
+    color: #fff;
+}
+
+.menu-slot {
+    background: var(--card-bg);
+    border-radius: 10px;
+    border: 1.5px solid rgba(128,128,128,0.1);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 80px;
+    position: relative;
+    transition: var(--transition);
+}
+
+.menu-slot:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(74,144,226,0.1);
+}
+
+.menu-slot-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--sidebar-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.menu-add-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    opacity: 0.5;
+    transition: var(--transition);
+}
+
+.menu-slot:hover .menu-add-btn { opacity: 1; }
+
+.menu-meal {
+    flex: 1;
+    position: relative;
+}
+
+.menu-meal-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-color);
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.menu-meal-notes {
+    font-size: 0.72rem;
+    color: var(--sidebar-text);
+    margin-top: 3px;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.menu-delete-btn {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--danger);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 0.55rem;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.menu-meal:hover .menu-delete-btn { display: flex; }
+
+.menu-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(128,128,128,0.3);
+    font-size: 1rem;
+}
+
+/* Widget dashboard today meals */
+.today-meals-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.today-meal-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: var(--bg-color);
+    border-radius: 20px;
+    font-size: 0.82rem;
+    border: 1.5px solid rgba(128,128,128,0.12);
+}
+
+@media (max-width: 900px) {
+    .menu-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .menu-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

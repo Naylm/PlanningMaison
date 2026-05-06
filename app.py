@@ -16,6 +16,11 @@ def _text_color(hex_color):
     return '#222222' if luminance > 0.5 else '#ffffff'
 
 app.jinja_env.filters['text_color'] = _text_color
+
+from datetime import timedelta as _timedelta
+app.jinja_env.globals['enumerate'] = enumerate
+app.jinja_env.globals['timedelta'] = _timedelta
+app.jinja_env.globals['timedelta_7'] = _timedelta(days=6)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'fredo.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'dev-key-fredo-1234'
@@ -68,6 +73,14 @@ class Event(db.Model):
         self.member_ids = json.dumps(ids) if ids else None
         self.member_id = ids[0] if ids else None
 
+class Meal(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    day = db.Column(db.Integer, nullable=False)  # 0=Lundi … 6=Dimanche
+    slot = db.Column(db.String(5), nullable=False)  # 'midi' ou 'soir'
+    week = db.Column(db.String(8), nullable=False)  # 'YYYY-WNN'
+    title = db.Column(db.String(150), nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
@@ -86,13 +99,41 @@ class Task(db.Model):
 
 @app.route('/')
 def index():
+    from datetime import date as _date
     now = datetime.now(timezone.utc)
     upcoming_events = Event.query.filter(Event.start_time >= now).order_by(Event.start_time.asc()).limit(3).all()
     recent_notes = Note.query.order_by(Note.created_at.desc()).limit(3).all()
     shopping_items = ShoppingItem.query.filter_by(is_completed=False).limit(5).all()
     pending_tasks = Task.query.filter_by(is_done=False).order_by(Task.points.desc()).limit(5).all()
     leaderboard = _get_leaderboard()
-    return render_template('dashboard.html', events=upcoming_events, notes=recent_notes, shopping=shopping_items, pending_tasks=pending_tasks, leaderboard=leaderboard)
+    today = _date.today()
+    week_key = today.strftime('%G-W%V')
+    today_meals = Meal.query.filter_by(week=week_key, day=today.weekday()).order_by(Meal.slot).all()
+    return render_template('dashboard.html', events=upcoming_events, notes=recent_notes, shopping=shopping_items,
+        pending_tasks=pending_tasks, leaderboard=leaderboard, today_meals=today_meals, today=today)
+
+@app.route('/menu')
+def menu_page():
+    from datetime import date as _date
+    import datetime as _dt
+    req_week = request.args.get('week')
+    today = _date.today()
+    if req_week:
+        week_key = req_week
+        year, wnum = int(req_week.split('-W')[0]), int(req_week.split('-W')[1])
+        week_start = _dt.date.fromisocalendar(year, wnum, 1)
+    else:
+        week_key = today.strftime('%G-W%V')
+        iso = today.isocalendar()
+        week_start = _dt.date.fromisocalendar(iso[0], iso[1], 1)
+    prev_week = (week_start - _dt.timedelta(weeks=1)).strftime('%G-W%V')
+    next_week = (week_start + _dt.timedelta(weeks=1)).strftime('%G-W%V')
+    meals = Meal.query.filter_by(week=week_key).all()
+    meals_map = {(m.day, m.slot): m for m in meals}
+    days = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']
+    return render_template('menu.html', week_key=week_key, week_start=week_start,
+        prev_week=prev_week, next_week=next_week, meals_map=meals_map,
+        days=days, today=today)
 
 @app.route('/members')
 def members_page():
@@ -349,6 +390,47 @@ def update_event(event_id):
 def delete_event(event_id):
     event = Event.query.get_or_404(event_id)
     db.session.delete(event)
+    db.session.commit()
+    return jsonify({'success': True})
+
+# API: Menu
+@app.route('/api/meals', methods=['GET'])
+def get_meals():
+    week = request.args.get('week')
+    if not week:
+        from datetime import date as _date
+        week = _date.today().strftime('%G-W%V')
+    meals = Meal.query.filter_by(week=week).all()
+    return jsonify([{'id': m.id, 'day': m.day, 'slot': m.slot, 'week': m.week, 'title': m.title, 'notes': m.notes} for m in meals])
+
+@app.route('/api/meals', methods=['POST'])
+def add_meal():
+    data = request.json
+    existing = Meal.query.filter_by(week=data['week'], day=data['day'], slot=data['slot']).first()
+    if existing:
+        existing.title = data['title']
+        existing.notes = data.get('notes', '')
+        db.session.commit()
+        m = existing
+    else:
+        m = Meal(day=int(data['day']), slot=data['slot'], week=data['week'], title=data['title'], notes=data.get('notes', ''))
+        db.session.add(m)
+        db.session.commit()
+    return jsonify({'id': m.id, 'day': m.day, 'slot': m.slot, 'week': m.week, 'title': m.title, 'notes': m.notes})
+
+@app.route('/api/meals/<int:meal_id>', methods=['PUT'])
+def update_meal(meal_id):
+    data = request.json
+    m = Meal.query.get_or_404(meal_id)
+    m.title = data['title']
+    m.notes = data.get('notes', m.notes)
+    db.session.commit()
+    return jsonify({'id': m.id, 'title': m.title, 'notes': m.notes})
+
+@app.route('/api/meals/<int:meal_id>', methods=['DELETE'])
+def delete_meal(meal_id):
+    m = Meal.query.get_or_404(meal_id)
+    db.session.delete(m)
     db.session.commit()
     return jsonify({'success': True})
 
