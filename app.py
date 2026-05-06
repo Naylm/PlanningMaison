@@ -6,6 +6,16 @@ from sqlalchemy import func
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
+
+def _text_color(hex_color):
+    hex_color = hex_color.lstrip('#')
+    if len(hex_color) != 6:
+        return '#222222'
+    r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    return '#222222' if luminance > 0.5 else '#ffffff'
+
+app.jinja_env.filters['text_color'] = _text_color
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'fredo.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'dev-key-fredo-1234'

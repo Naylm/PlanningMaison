@@ -13,11 +13,11 @@
             {% for note in notes %}
                 <div class="note-card" style="background-color: {{ note.color }};" data-id="{{ note.id }}">
                     <div class="note-actions" style="position: absolute; top: 10px; right: 10px; display: flex; gap: 5px;">
-                        <button class="btn" onclick="editNote({{ note.id }}, '{{ note.title|replace("'", "\\'") }}', '{{ note.content|replace("'", "\\'")|replace("\n", "\\n") }}', '{{ note.color }}')" style="padding: 2px 8px; font-size: 0.7rem; background-color: rgba(255,255,255,0.2);"><i class="fas fa-edit"></i></button>
-                        <button class="btn" onclick="deleteNote({{ note.id }})" style="padding: 2px 8px; font-size: 0.7rem; background-color: rgba(255,255,255,0.2);"><i class="fas fa-trash"></i></button>
+                        <button class="btn" onclick="editNote({{ note.id }}, '{{ note.title|replace("'", "\\'") }}', '{{ note.content|replace("'", "\\'")|replace("\n", "\\n") }}', '{{ note.color }}')" style="padding: 2px 8px; font-size: 0.7rem; background-color: rgba(128,128,128,0.25);"><i class="fas fa-edit"></i></button>
+                        <button class="btn" onclick="deleteNote({{ note.id }})" style="padding: 2px 8px; font-size: 0.7rem; background-color: rgba(128,128,128,0.25);"><i class="fas fa-trash"></i></button>
                     </div>
-                    <h3 style="color: #333;">{{ note.title }}</h3>
-                    <p style="color: #444;">{{ note.content }}</p>
+                    <h3 style="color: {{ note.color|text_color }};">{{ note.title }}</h3>
+                    <p style="color: {{ note.color|text_color }}; opacity: 0.85;">{{ note.content }}</p>
                 </div>
             {% endfor %}
         </div>

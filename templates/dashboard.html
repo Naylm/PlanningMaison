@@ -92,8 +92,8 @@
         <div style="margin-top: 10px;">
             {% for note in notes %}
                 <div style="background-color: {{ note.color }}; padding: 8px 12px; margin-bottom: 6px; border-radius:8px;">
-                    <div style="color: #333; font-size: 0.85rem; font-weight:600;">{{ note.title }}</div>
-                    <div style="color: #555; font-size: 0.78rem;">{{ note.content[:60] }}{% if note.content|length > 60 %}…{% endif %}</div>
+                    <div style="color: {{ note.color|text_color }}; font-size: 0.85rem; font-weight:600;">{{ note.title }}</div>
+                    <div style="color: {{ note.color|text_color }}; opacity:0.8; font-size: 0.78rem;">{{ note.content[:60] }}{% if note.content|length > 60 %}…{% endif %}</div>
                 </div>
             {% endfor %}
             {% if not notes %}
