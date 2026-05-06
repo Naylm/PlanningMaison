@@ -171,30 +171,68 @@ window.onclick = function(event) {
 // ==========================================
 // Avatar Picker
 // ==========================================
-const AVATAR_EMOJIS = [
-    '👤','👦','👧','👨','👩','👴','👵','🧒','🧑','🧔','👱','🧓',
-    '👶','🧑‍🍼','🧑‍🎤','🧑‍🎨','🧑‍🍳','🧑‍🏫','🧑‍🔧','🧑‍💻','🧑‍🏠',
-    '😀','😎','🥸','🤓','😍','🥰','😇','🤩','😜','🤪',
-    '🐶','🐱','🐻','🐼','🐨','🦊','🐯','🦁','🐸','🐧','🦄','🐲',
-    '⚽','🏀','🎮','🎸','🎵','🎨','📚','🌟','❤️','🔥','💎','🏆'
+const AVATAR_CATEGORIES = [
+    { label: 'Neutre', emojis: ['👤','🧑','🧑🏻','🧑🏼','🧑🏽','🧑🏾','🧑🏿'] },
+    { label: 'Enfants', emojis: [
+        '👶','👶🏻','👶🏼','👶🏽','👶🏾','👶🏿',
+        '🧒','🧒🏻','🧒🏼','🧒🏽','🧒🏾','🧒🏿',
+        '👦','👦🏻','👦🏼','👦🏽','👦🏾','👦🏿',
+        '👧','👧🏻','👧🏼','🏽','👧🏾','👧🏿'
+    ]},
+    { label: 'Hommes', emojis: [
+        '👨','👨🏻','🏼','👨🏽','👨🏾','👨🏿',
+        '👨‍🦰','👨🏻‍🦰','👨🏼‍🦰','👨🏽‍🦰','👨🏾‍🦰','👨🏿‍🦰',
+        '👨‍🦱','👨🏻‍🦱','👨🏼‍🦱','👨🏽‍🦱','👨🏾‍🦱','👨🏿‍🦱',
+        '👨‍🦳','👨🏻‍🦳','👨🏼‍🦳','👨🏽‍🦳','👨🏾‍🦳','👨🏿‍🦳',
+        '👨‍🦲','👨🏻‍🦲','👨🏼‍🦲','👨🏽‍🦲','👨🏾‍🦲','👨🏿‍🦲',
+        '🧔','🧔🏻','🧔🏼','🧔🏽','🧔🏾','🧔🏿',
+        '🧔‍♂️','🧔🏻‍♂️','🧔🏼‍♂️','🧔🏽‍♂️','🧔🏾‍♂️','🧔🏿‍♂️',
+        '👱‍♂️','👱🏻‍♂️','👱🏼‍♂️','👱🏽‍♂️','👱🏾‍♂️','👱🏿‍♂️'
+    ]},
+    { label: 'Femmes', emojis: [
+        '👩','👩🏻','👩🏼','👩🏽','👩🏾','👩🏿',
+        '👩‍🦰','👩🏻‍🦰','👩🏼‍🦰','👩🏽‍🦰','👩🏾‍🦰','👩🏿‍🦰',
+        '👩‍🦱','👩🏻‍🦱','👩🏼‍🦱','👩🏽‍🦱','👩🏾‍🦱','👩🏿‍🦱',
+        '👩‍🦳','👩🏻‍🦳','👩🏼‍🦳','👩🏽‍🦳','👩🏾‍🦳','👩🏿‍🦳',
+        '👩‍🦲','👩🏻‍🦲','👩🏼‍🦲','👩🏽‍🦲','👩🏾‍🦲','👩🏿‍🦲',
+        '👱‍♀️','👱🏻‍♀️','👱🏼‍♀️','👱🏽‍♀️','👱🏾‍♀️','👱🏿‍♀️'
+    ]},
+    { label: 'Seniors', emojis: [
+        '🧓','🧓🏻','🧓🏼','🧓🏽','🧓🏾','🧓🏿',
+        '👴','👴🏻','👴🏼','👴🏽','👴🏾','👴🏿',
+        '👵','👵🏻','👵🏼','👵🏽','👵🏾','👵🏿'
+    ]},
+    { label: 'Visages', emojis: ['😀','😄','😁','😎','🥸','🤓','😍','🥰','😇','🤩','😜','🤪','😏','🙂','😊','😂','🤣','😆'] },
+    { label: 'Animaux', emojis: ['🐶','🐱','🐻','🐼','🐨','🦊','🐯','🦁','🐸','🐧','🦄','🐲','🐺','🦝','🐮','🐰','🐹','🐭'] },
+    { label: 'Divers', emojis: ['⚽','🏀','🎮','🎸','🎵','🎨','📚','🌟','❤️','🔥','💎','🏆','🚀','🌈','👑','🎯','🍕','🌙'] }
 ];
 
 function initAvatarPicker(prefix) {
     const grid = document.getElementById(`${prefix}EmojiGrid`);
     if (!grid || grid.dataset.init) return;
     grid.dataset.init = '1';
-    AVATAR_EMOJIS.forEach(emoji => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.textContent = emoji;
-        btn.onclick = () => {
-            grid.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            const input = document.getElementById(prefix === 'add' ? 'memberAvatar' : 'editMemberAvatar');
-            if (input) input.value = emoji;
-            updateAvatarPreview(prefix);
-        };
-        grid.appendChild(btn);
+
+    AVATAR_CATEGORIES.forEach((cat, ci) => {
+        const label = document.createElement('div');
+        label.className = 'emoji-section-label';
+        label.textContent = cat.label;
+        if (ci === 0) label.style.borderTop = 'none';
+        grid.appendChild(label);
+
+        cat.emojis.forEach(emoji => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = emoji;
+            btn.title = emoji;
+            btn.onclick = () => {
+                grid.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                const input = document.getElementById(prefix === 'add' ? 'memberAvatar' : 'editMemberAvatar');
+                if (input) input.value = emoji;
+                updateAvatarPreview(prefix);
+            };
+            grid.appendChild(btn);
+        });
     });
 }
 

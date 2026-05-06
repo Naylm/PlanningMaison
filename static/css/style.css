@@ -501,13 +501,25 @@ body.dark-mode .fc .fc-button-primary:disabled {
 .emoji-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    max-height: 120px;
+    gap: 3px;
+    max-height: 200px;
     overflow-y: auto;
-    padding: 4px;
+    padding: 6px;
     border: 1px solid rgba(0,0,0,0.08);
     border-radius: 10px;
     background: var(--bg-color);
+}
+
+.emoji-grid .emoji-section-label {
+    grid-column: 1 / -1;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--sidebar-text);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 2px 2px;
+    border-top: 1px solid rgba(128,128,128,0.15);
+    margin-top: 2px;
 }
 
 .emoji-grid button {
