@@ -12,12 +12,16 @@
         <div class="members-list" id="membersList">
             {% for member in members %}
                 <div class="member-avatar-container" data-id="{{ member.id }}" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                    <div class="member-avatar" style="background-color: {{ member.color }};" title="{{ member.name }}">
-                        {{ member.avatar }}
+                    <div class="member-avatar" style="background-color: {{ member.color if not member.photo else 'transparent' }}; overflow:hidden;" title="{{ member.name }}">
+                        {% if member.photo %}
+                            <img src="{{ member.photo }}" alt="{{ member.name }}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                        {% else %}
+                            {{ member.avatar }}
+                        {% endif %}
                     </div>
                     <span style="font-size: 0.8rem; font-weight: 600;">{{ member.name }}</span>
                     <div class="member-actions" style="display: flex; gap: 5px;">
-                        <button class="btn" onclick="editMember({{ member.id }}, '{{ member.name }}', '{{ member.color }}', '{{ member.avatar }}')" style="padding: 2px 8px; font-size: 0.7rem; background-color: var(--primary);"><i class="fas fa-edit"></i></button>
+                        <button class="btn" onclick="editMember({{ member.id }}, '{{ member.name }}', '{{ member.color }}', '{{ member.avatar }}', {{ ('`' + member.photo + '`') if member.photo else 'null' }})" style="padding: 2px 8px; font-size: 0.7rem; background-color: var(--primary);"><i class="fas fa-edit"></i></button>
                         <button class="btn" onclick="deleteMember({{ member.id }})" style="padding: 2px 8px; font-size: 0.7rem; background-color: var(--danger);"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
@@ -45,10 +49,33 @@
                 <input type="color" id="editMemberColor">
             </div>
             <div class="form-group">
-                <label>Avatar (Emoji)</label>
-                <input type="text" id="editMemberAvatar" maxlength="2">
+                <label>Avatar</label>
+                <div class="avatar-picker">
+                    <div class="avatar-preview-wrap">
+                        <div class="avatar-preview" id="editAvatarPreview">👤</div>
+                        <div style="font-size:0.75rem; color:var(--sidebar-text); margin-top:4px;">Aperçu</div>
+                    </div>
+                    <div style="flex:1;">
+                        <div class="avatar-tabs">
+                            <button type="button" class="avatar-tab active" id="editEmojiTab" onclick="switchAvatarTab('edit','emoji',this)">Emoji</button>
+                            <button type="button" class="avatar-tab" id="editPhotoTab" onclick="switchAvatarTab('edit','photo',this)">Photo</button>
+                        </div>
+                        <div id="editEmojiPanel" class="avatar-panel">
+                            <div class="emoji-grid" id="editEmojiGrid"></div>
+                            <input type="text" id="editMemberAvatar" maxlength="2" placeholder="Ou tape un emoji..." style="margin-top:6px; width:100%; padding:0.4rem 0.6rem; border-radius:8px; border:1px solid rgba(0,0,0,0.12); background:var(--card-bg); color:var(--text-color); font-size:1.1rem;" oninput="updateAvatarPreview('edit')">
+                        </div>
+                        <div id="editPhotoPanel" class="avatar-panel" style="display:none;">
+                            <label class="photo-upload-btn">
+                                <i class="fas fa-camera"></i> Choisir une photo
+                                <input type="file" id="editMemberPhoto" accept="image/*" style="display:none;" onchange="handlePhotoUpload('edit',this)">
+                            </label>
+                            <button type="button" class="btn" style="background:var(--danger); padding:0.4rem 0.8rem; font-size:0.78rem; margin-top:6px;" onclick="clearPhoto('edit')"><i class="fas fa-times"></i> Retirer la photo</button>
+                            <input type="hidden" id="editMemberPhotoData">
+                        </div>
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn">Enregistrer les modifications</button>
+            <button type="submit" class="btn" style="width:100%; justify-content:center;">Enregistrer</button>
         </form>
     </div>
 </div>

@@ -123,10 +123,33 @@
                     <input type="color" id="memberColor" value="#3498db">
                 </div>
                 <div class="form-group">
-                    <label>Avatar (Emoji)</label>
-                    <input type="text" id="memberAvatar" value="👤" maxlength="2">
+                    <label>Avatar</label>
+                    <div class="avatar-picker">
+                        <div class="avatar-preview-wrap">
+                            <div class="avatar-preview" id="addAvatarPreview">&#128100;</div>
+                            <div style="font-size:0.75rem; color:var(--sidebar-text); margin-top:4px;">Aperçu</div>
+                        </div>
+                        <div style="flex:1;">
+                            <div class="avatar-tabs">
+                                <button type="button" class="avatar-tab active" onclick="switchAvatarTab('add','emoji',this)">Emoji</button>
+                                <button type="button" class="avatar-tab" onclick="switchAvatarTab('add','photo',this)">Photo</button>
+                            </div>
+                            <div id="addEmojiPanel" class="avatar-panel">
+                                <div class="emoji-grid" id="addEmojiGrid"></div>
+                                <input type="text" id="memberAvatar" value="👤" maxlength="2" placeholder="Ou tape un emoji..." style="margin-top:6px; width:100%; padding:0.4rem 0.6rem; border-radius:8px; border:1px solid rgba(0,0,0,0.12); background:var(--card-bg); color:var(--text-color); font-size:1.1rem;" oninput="updateAvatarPreview('add')">
+                            </div>
+                            <div id="addPhotoPanel" class="avatar-panel" style="display:none;">
+                                <label class="photo-upload-btn">
+                                    <i class="fas fa-camera"></i> Choisir une photo
+                                    <input type="file" id="memberPhoto" accept="image/*" style="display:none;" onchange="handlePhotoUpload('add',this)">
+                                </label>
+                                <button type="button" class="btn" style="background:var(--danger); padding:0.4rem 0.8rem; font-size:0.78rem; margin-top:6px;" onclick="clearPhoto('add')"><i class="fas fa-times"></i> Retirer la photo</button>
+                                <input type="hidden" id="memberPhotoData">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <button type="submit" class="btn">Ajouter</button>
+                <button type="submit" class="btn" style="width:100%; justify-content:center;">Ajouter</button>
             </form>
         </div>
     </div>

@@ -21,6 +21,7 @@ class Member(db.Model):
     name = db.Column(db.String(50), nullable=False)
     color = db.Column(db.String(20), default='#3498db')
     avatar = db.Column(db.String(10), default='👤')
+    photo = db.Column(db.Text, nullable=True)
 
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -101,10 +102,15 @@ def tasks_page():
 @app.route('/api/members', methods=['POST'])
 def add_member():
     data = request.json
-    new_member = Member(name=data['name'], color=data.get('color', '#3498db'), avatar=data.get('avatar', '👤'))
+    new_member = Member(
+        name=data['name'],
+        color=data.get('color', '#3498db'),
+        avatar=data.get('avatar', '👤'),
+        photo=data.get('photo') or None
+    )
     db.session.add(new_member)
     db.session.commit()
-    return jsonify({'id': new_member.id, 'name': new_member.name, 'color': new_member.color, 'avatar': new_member.avatar})
+    return jsonify({'id': new_member.id, 'name': new_member.name, 'color': new_member.color, 'avatar': new_member.avatar, 'photo': new_member.photo})
 
 @app.route('/api/members/<int:member_id>', methods=['PUT'])
 def update_member(member_id):
@@ -113,8 +119,10 @@ def update_member(member_id):
     member.name = data['name']
     member.color = data['color']
     member.avatar = data['avatar']
+    if 'photo' in data:
+        member.photo = data['photo'] or None
     db.session.commit()
-    return jsonify({'id': member.id, 'name': member.name, 'color': member.color, 'avatar': member.avatar})
+    return jsonify({'id': member.id, 'name': member.name, 'color': member.color, 'avatar': member.avatar, 'photo': member.photo})
 
 @app.route('/api/members/<int:member_id>', methods=['DELETE'])
 def delete_member(member_id):
@@ -234,7 +242,7 @@ def _get_leaderboard():
             Task.done_by == m.id,
             Task.is_done == True
         ).scalar() or 0
-        result.append({'id': m.id, 'name': m.name, 'avatar': m.avatar, 'color': m.color, 'points_month': pts, 'points_total': total_pts})
+        result.append({'id': m.id, 'name': m.name, 'avatar': m.avatar, 'color': m.color, 'photo': m.photo, 'points_month': pts, 'points_total': total_pts})
     result.sort(key=lambda x: x['points_month'], reverse=True)
     return result
 

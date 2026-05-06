@@ -169,6 +169,106 @@ window.onclick = function(event) {
 }
 
 // ==========================================
+// Avatar Picker
+// ==========================================
+const AVATAR_EMOJIS = [
+    '👤','👦','👧','👨','👩','👴','👵','🧒','🧑','🧔','👱','🧓',
+    '👶','🧑‍🍼','🧑‍🎤','🧑‍🎨','🧑‍🍳','🧑‍🏫','🧑‍🔧','🧑‍💻','🧑‍🏠',
+    '😀','😎','🥸','🤓','😍','🥰','😇','🤩','😜','🤪',
+    '🐶','🐱','🐻','🐼','🐨','🦊','🐯','🦁','🐸','🐧','🦄','🐲',
+    '⚽','🏀','🎮','🎸','🎵','🎨','📚','🌟','❤️','🔥','💎','🏆'
+];
+
+function initAvatarPicker(prefix) {
+    const grid = document.getElementById(`${prefix}EmojiGrid`);
+    if (!grid || grid.dataset.init) return;
+    grid.dataset.init = '1';
+    AVATAR_EMOJIS.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = emoji;
+        btn.onclick = () => {
+            grid.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            const input = document.getElementById(prefix === 'add' ? 'memberAvatar' : 'editMemberAvatar');
+            if (input) input.value = emoji;
+            updateAvatarPreview(prefix);
+        };
+        grid.appendChild(btn);
+    });
+}
+
+window.switchAvatarTab = function(prefix, tab, btnEl) {
+    document.querySelectorAll(`#${prefix === 'add' ? 'memberModal' : 'editMemberModal'} .avatar-tab`).forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+    document.getElementById(`${prefix}EmojiPanel`).style.display = tab === 'emoji' ? '' : 'none';
+    document.getElementById(`${prefix}PhotoPanel`).style.display = tab === 'photo' ? '' : 'none';
+    if (tab === 'emoji') initAvatarPicker(prefix);
+}
+
+window.updateAvatarPreview = function(prefix) {
+    const preview = document.getElementById(`${prefix}AvatarPreview`);
+    const photoData = document.getElementById(prefix === 'add' ? 'memberPhotoData' : 'editMemberPhotoData')?.value;
+    const emoji = document.getElementById(prefix === 'add' ? 'memberAvatar' : 'editMemberAvatar')?.value || '👤';
+    const color = document.getElementById(prefix === 'add' ? 'memberColor' : 'editMemberColor')?.value || '#3498db';
+    if (!preview) return;
+    if (photoData) {
+        preview.innerHTML = `<img src="${photoData}" style="width:100%;height:100%;object-fit:cover;">`;
+        preview.style.background = 'transparent';
+    } else {
+        preview.innerHTML = emoji;
+        preview.style.background = color;
+    }
+}
+
+window.handlePhotoUpload = function(prefix, input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        // Redimensionner à max 200x200 pour ne pas surcharger la DB
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX = 200;
+            let w = img.width, h = img.height;
+            if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+            else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            const hiddenInput = document.getElementById(prefix === 'add' ? 'memberPhotoData' : 'editMemberPhotoData');
+            if (hiddenInput) hiddenInput.value = dataUrl;
+            updateAvatarPreview(prefix);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+window.clearPhoto = function(prefix) {
+    const hiddenInput = document.getElementById(prefix === 'add' ? 'memberPhotoData' : 'editMemberPhotoData');
+    if (hiddenInput) hiddenInput.value = '';
+    const fileInput = document.getElementById(prefix === 'add' ? 'memberPhoto' : 'editMemberPhoto');
+    if (fileInput) fileInput.value = '';
+    updateAvatarPreview(prefix);
+}
+
+// Sync la couleur avec l'aperçu en temps réel
+document.addEventListener('input', (e) => {
+    if (e.target.id === 'memberColor') updateAvatarPreview('add');
+    if (e.target.id === 'editMemberColor') updateAvatarPreview('edit');
+});
+
+// Init grilles emoji à l'ouverture des modals
+const _origOpenModal = window.openModal;
+window.openModal = function(modalId) {
+    _origOpenModal(modalId);
+    if (modalId === 'memberModal') { initAvatarPicker('add'); updateAvatarPreview('add'); }
+    if (modalId === 'editMemberModal') { initAvatarPicker('edit'); }
+}
+
+// ==========================================
 // API & Fonctions Membres
 // ==========================================
 async function handleAddMember(e) {
@@ -176,21 +276,31 @@ async function handleAddMember(e) {
     const name = document.getElementById('memberName').value;
     const color = document.getElementById('memberColor').value;
     const avatar = document.getElementById('memberAvatar').value;
+    const photo = document.getElementById('memberPhotoData')?.value || '';
 
     const res = await fetch('/api/members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, color, avatar })
+        body: JSON.stringify({ name, color, avatar, photo: photo || null })
     });
     if (res.ok) location.reload();
 }
 
-window.editMember = function(id, name, color, avatar) {
+window.editMember = function(id, name, color, avatar, photo) {
     document.getElementById('editMemberId').value = id;
     document.getElementById('editMemberName').value = name;
     document.getElementById('editMemberColor').value = color;
     document.getElementById('editMemberAvatar').value = avatar;
+    const photoInput = document.getElementById('editMemberPhotoData');
+    if (photoInput) photoInput.value = photo || '';
     openModal('editMemberModal');
+    // Mettre à jour l'aperçu après ouverture
+    setTimeout(() => updateAvatarPreview('edit'), 50);
+    // Si photo existante, basculer sur l'onglet photo
+    if (photo) {
+        const photoTab = document.getElementById('editPhotoTab');
+        if (photoTab) switchAvatarTab('edit', 'photo', photoTab);
+    }
 }
 
 async function handleUpdateMember(e) {
@@ -199,11 +309,12 @@ async function handleUpdateMember(e) {
     const name = document.getElementById('editMemberName').value;
     const color = document.getElementById('editMemberColor').value;
     const avatar = document.getElementById('editMemberAvatar').value;
+    const photo = document.getElementById('editMemberPhotoData')?.value || '';
 
     const res = await fetch(`/api/members/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, color, avatar })
+        body: JSON.stringify({ name, color, avatar, photo: photo || null })
     });
     if (res.ok) location.reload();
 }

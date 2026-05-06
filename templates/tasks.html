@@ -61,21 +61,27 @@
                 {% if leaderboard|length >= 2 %}
                 <div class="podium-item">
                     <div class="podium-rank">🥈</div>
-                    <div class="podium-avatar" style="background-color:{{ leaderboard[1].color }};">{{ leaderboard[1].avatar }}</div>
+                    <div class="podium-avatar" style="background-color:{{ leaderboard[1].color if not leaderboard[1].photo else 'transparent' }}; overflow:hidden;">
+                        {% if leaderboard[1].photo %}<img src="{{ leaderboard[1].photo }}" style="width:100%;height:100%;object-fit:cover;">{% else %}{{ leaderboard[1].avatar }}{% endif %}
+                    </div>
                     <div class="podium-name">{{ leaderboard[1].name }}</div>
                     <div class="podium-pts">{{ leaderboard[1].points_month }} pts</div>
                 </div>
                 {% endif %}
                 <div class="podium-item first">
                     <div class="podium-rank">🥇</div>
-                    <div class="podium-avatar" style="background-color:{{ leaderboard[0].color }};">{{ leaderboard[0].avatar }}</div>
+                    <div class="podium-avatar" style="background-color:{{ leaderboard[0].color if not leaderboard[0].photo else 'transparent' }}; overflow:hidden;">
+                        {% if leaderboard[0].photo %}<img src="{{ leaderboard[0].photo }}" style="width:100%;height:100%;object-fit:cover;">{% else %}{{ leaderboard[0].avatar }}{% endif %}
+                    </div>
                     <div class="podium-name">{{ leaderboard[0].name }}</div>
                     <div class="podium-pts">{{ leaderboard[0].points_month }} pts</div>
                 </div>
                 {% if leaderboard|length >= 3 %}
                 <div class="podium-item">
                     <div class="podium-rank">🥉</div>
-                    <div class="podium-avatar" style="background-color:{{ leaderboard[2].color }};">{{ leaderboard[2].avatar }}</div>
+                    <div class="podium-avatar" style="background-color:{{ leaderboard[2].color if not leaderboard[2].photo else 'transparent' }}; overflow:hidden;">
+                        {% if leaderboard[2].photo %}<img src="{{ leaderboard[2].photo }}" style="width:100%;height:100%;object-fit:cover;">{% else %}{{ leaderboard[2].avatar }}{% endif %}
+                    </div>
                     <div class="podium-name">{{ leaderboard[2].name }}</div>
                     <div class="podium-pts">{{ leaderboard[2].points_month }} pts</div>
                 </div>
@@ -88,7 +94,9 @@
                 {% for member in leaderboard %}
                 <li class="leaderboard-row">
                     <span class="leaderboard-pos">{{ loop.index }}</span>
-                    <span class="leaderboard-avatar">{{ member.avatar }}</span>
+                    <span class="leaderboard-avatar" style="display:inline-flex; width:28px; height:28px; border-radius:50%; overflow:hidden; align-items:center; justify-content:center; background:{{ member.color if not member.photo else 'transparent' }};">
+                    {% if member.photo %}<img src="{{ member.photo }}" style="width:100%;height:100%;object-fit:cover;">{% else %}{{ member.avatar }}{% endif %}
+                </span>
                     <span class="leaderboard-name">{{ member.name }}</span>
                     <div class="progress-bar-wrap">
                         <div class="progress-bar-fill" style="width:{{ ((member.points_month / max_pts) * 100)|int }}%; background-color:{{ member.color }};"></div>
