@@ -67,17 +67,30 @@ Gardez cette copie dans un endroit sûr (clé USB, cloud…).
 
 ---
 
-## � Accès depuis un téléphone / tablette
+## 📱 Accès depuis un téléphone / tablette (même Wi-Fi)
 
-1. Lancez l'application sur le PC
-2. Trouvez l'IP de votre PC (Paramètres Wi-Fi, ou tapez `ipconfig` dans un terminal Windows)
-3. Sur le téléphone (même Wi-Fi) : ouvrez **`http://VOTRE_IP:5000`**
+1. **Lancez l'application** sur le PC avec `Lancer_Planning.bat`
+
+2. **Dans la fenêtre noire**, regardez la ligne affichée :
+
+   ```text
+   http://192.168.1.XX:5000
+   ```
+
+3. **Sur votre téléphone / tablette** (connecté au même Wi-Fi) :
+   - Ouvrez Chrome ou Safari
+   - Tapez cette adresse dans la barre en haut
+   - ✅ L'appli s'ouvre !
+
+> Astuce : Sur mobile, "Ajouter à l'écran d'accueil" pour avoir une icône comme une vraie app.
+>
+> ⚠️ Le PC doit rester allumé avec la fenêtre noire ouverte pour que l'appli soit accessible.
 
 ---
 
 ## 📦 Structure du projet
 
-```
+```text
 PlanningMaison/
 ├── app.py                  → Serveur & API
 ├── fredo.db                → Base de données (NE PAS SUPPRIMER)
