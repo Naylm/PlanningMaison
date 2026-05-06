@@ -289,13 +289,27 @@ header {
     font-size: 0.9rem;
 }
 
+.form-group input, .form-group textarea,
+input[type="text"], input[type="datetime-local"], input[type="color"],
+textarea {
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+
 .form-group input, .form-group textarea {
     width: 100%;
     padding: 0.8rem;
     border-radius: 8px;
-    border: 1px solid rgba(0,0,0,0.1);
-    background: #fff;
+    border: 1px solid rgba(128,128,128,0.2);
+    background: var(--card-bg);
     color: var(--text-color);
+    transition: border-color var(--transition);
+}
+
+.form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(74,144,226,0.15);
 }
 
 /* Boutons */
