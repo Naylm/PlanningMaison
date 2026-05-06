@@ -88,7 +88,31 @@ Gardez cette copie dans un endroit sûr (clé USB, cloud…).
 
 ---
 
-## 📦 Structure du projet
+## � Ajouter l'icône sur l'écran d'accueil (Android & iOS)
+
+Pour que Planning Maison ressemble à une vraie application sur votre téléphone :
+
+### 🤖 Android (Chrome)
+
+1. Ouvrez l'appli dans Chrome avec l'adresse affichée
+2. Appuyez sur les **3 points** ⋮ (menu) en haut à droite
+3. Sélectionnez **"Ajouter à l'écran d'accueil"**
+4. Confirmez en tapant **"Ajouter"**
+5. ✅ L'icône apparaît sur votre écran d'accueil !
+
+###  iOS (iPhone / iPad - Safari)
+
+1. Ouvrez l'appli dans Safari avec l'adresse affichée
+2. Appuyez sur le bouton **Partager** ⎙ (carré avec flèche vers le haut) en bas de l'écran
+3. Faites défiler et sélectionnez **"Sur l'écran d'accueil"**
+4. Confirmez en tapant **"Ajouter"** en haut à droite
+5. ✅ L'icône apparaît sur votre écran d'accueil !
+
+> 💡 Une fois l'icône créée, vous n'avez plus besoin de retaper l'adresse — un clic suffit !
+
+---
+
+## �📦 Structure du projet
 
 ```text
 PlanningMaison/
