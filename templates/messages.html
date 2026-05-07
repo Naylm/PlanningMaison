@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Messages{% endblock %}
+{% block page_title %}💬 Messages famille{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+
+    <!-- Fil de messages -->
+    <div class="card fade-in full-width">
+        <div class="card-header" style="margin-bottom:1.2rem;">
+            <h2 class="section-title">Fil de discussion</h2>
+        </div>
+
+        <div id="messagesList" style="display:flex; flex-direction:column; gap:0.75rem; max-height:60vh; overflow-y:auto; padding-right:4px; margin-bottom:1.5rem;">
+            {% for msg in messages %}
+            <div class="msg-bubble {% if msg.pinned %}msg-pinned{% endif %}" data-id="{{ msg.id }}">
+                <div class="msg-avatar" style="background:{{ msg.member.color if msg.member else '#2eb49e' }};">
+                    {% if msg.member and msg.member.photo %}
+                    <img src="{{ msg.member.photo }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                    {% else %}
+                    {{ msg.member.avatar if msg.member else '🏡' }}
+                    {% endif %}
+                </div>
+                <div class="msg-body">
+                    <div class="msg-meta">
+                        <strong>{{ msg.member.name if msg.member else 'Maison' }}</strong>
+                        <span class="text-muted" style="font-size:0.75rem;">{{ msg.created_at.strftime('%d/%m %H:%M') if msg.created_at }}</span>
+                        {% if msg.pinned %}<span style="color:#f59e0b; font-size:0.8rem;">📌 épinglé</span>{% endif %}
+                    </div>
+                    <div class="msg-content">{{ msg.content }}</div>
+                </div>
+                <div class="msg-actions">
+                    <button onclick="togglePin({{ msg.id }}, this)" title="Épingler" class="delete-btn" style="font-size:0.8rem; opacity:0.5;">
+                        <i class="fas fa-thumbtack"></i>
+                    </button>
+                    <button onclick="deleteMsg({{ msg.id }}, this)" title="Supprimer" class="delete-btn" style="font-size:0.8rem; opacity:0.4;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <p id="emptyMsgs" class="text-muted" style="text-align:center; padding:2rem 0;">Aucun message pour l'instant. Dites bonjour ! 👋</p>
+            {% endfor %}
+        </div>
+
+        <!-- Formulaire -->
+        <form id="msgForm" style="display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
+            <select id="msgMember" style="padding:0.7rem 0.9rem; border-radius:10px; border:1px solid rgba(0,0,0,0.1); background:var(--card-bg); color:var(--text-color); min-width:130px;">
+                <option value="">🏡 Maison</option>
+                {% for member in members %}
+                <option value="{{ member.id }}">{{ member.avatar }} {{ member.name }}</option>
+                {% endfor %}
+            </select>
+            <textarea id="msgContent" placeholder="Écrire un message…" rows="2"
+                style="flex:1; min-width:200px; padding:0.7rem 1rem; border-radius:10px; border:1px solid rgba(0,0,0,0.1); background:var(--card-bg); color:var(--text-color); font-family:inherit; font-size:0.95rem; resize:none;"
+                onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); document.getElementById('msgForm').dispatchEvent(new Event('submit'));}"></textarea>
+            <button type="submit" class="btn"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
+
+</div>
+
+<style>
+.msg-bubble {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.75rem;
+    border-radius: 12px;
+    background: var(--bg-color);
+    transition: background 0.2s;
+}
+.msg-bubble.msg-pinned {
+    background: rgba(245, 158, 11, 0.07);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+.msg-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.msg-body {
+    flex: 1;
+    min-width: 0;
+}
+.msg-meta {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    margin-bottom: 0.25rem;
+    flex-wrap: wrap;
+}
+.msg-content {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+.msg-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.msg-bubble:hover .msg-actions { opacity: 1; }
+</style>
+
+<script>
+document.getElementById('msgForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const content = document.getElementById('msgContent').value.trim();
+    if (!content) return;
+    const member_id = document.getElementById('msgMember').value || null;
+    const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, member_id })
+    });
+    if (res.ok) {
+        document.getElementById('msgContent').value = '';
+        location.reload();
+    }
+});
+
+window.togglePin = async function(id, btn) {
+    const res = await fetch(`/api/messages/${id}/pin`, { method: 'PUT' });
+    if (res.ok) location.reload();
+};
+
+window.deleteMsg = async function(id, btn) {
+    const bubble = btn.closest('.msg-bubble');
+    const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
+    if (res.ok && bubble) bubble.remove();
+};
+
+// Auto-scroll vers le bas
+const list = document.getElementById('messagesList');
+if (list) list.scrollTop = list.scrollHeight;
+</script>
+{% endblock %}

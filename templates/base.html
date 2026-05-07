@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planning maison - {% block title %}Accueil{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+    <meta name="theme-color" content="#2eb49e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Planning">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,6 +23,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
     {% block head %}{% endblock %}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .catch(err => console.warn('SW:', err));
+            });
+        }
+    </script>
 </head>
 <body data-page="{% if request.path == '/' %}dashboard{% elif request.path == '/shopping' %}shopping{% elif request.path == '/tasks' %}tasks{% elif request.path == '/notes' %}notes{% elif request.path == '/members' %}members{% elif request.path == '/calendar' %}calendar{% else %}other{% endif %}">
 
@@ -59,6 +73,9 @@
             </li>
             <li class="nav-item {% if request.path == '/menu' %}active{% endif %}">
                 <a href="{{ url_for('menu_page') }}"><span>🍽️</span> Menu</a>
+            </li>
+            <li class="nav-item {% if request.path == '/messages' %}active{% endif %}">
+                <a href="{{ url_for('messages_page') }}"><span>💬</span> Messages</a>
             </li>
         </ul>
 

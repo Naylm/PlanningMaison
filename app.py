@@ -124,6 +124,14 @@ class Meal(db.Model):
     notes = db.Column(db.Text, nullable=True)
     ingredients = db.Column(db.Text, nullable=True)  # une ligne = un ingrédient
 
+class FamilyMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    pinned = db.Column(db.Boolean, default=False)
+    member = db.relationship('Member', backref=db.backref('messages', lazy=True))
+
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
@@ -134,6 +142,7 @@ class Task(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     done_at = db.Column(db.DateTime, nullable=True)
     due_date = db.Column(db.DateTime, nullable=True)
+    room = db.Column(db.String(50), nullable=True)
     assignee = db.relationship('Member', foreign_keys=[assigned_to], backref=db.backref('assigned_tasks', lazy=True))
     doer = db.relationship('Member', foreign_keys=[done_by], backref=db.backref('done_tasks', lazy=True))
 
@@ -153,8 +162,10 @@ def index():
     today = _date.today()
     week_key = today.strftime('%G-W%V')
     today_meals = Meal.query.filter_by(week=week_key, day=today.weekday()).order_by(Meal.slot).all()
+    recent_messages = FamilyMessage.query.order_by(FamilyMessage.pinned.desc(), FamilyMessage.created_at.desc()).limit(3).all()
     return render_template('dashboard.html', events=upcoming_events, notes=recent_notes, shopping=shopping_items,
-        pending_tasks=pending_tasks, leaderboard=leaderboard, today_meals=today_meals, today=today)
+        pending_tasks=pending_tasks, leaderboard=leaderboard, today_meals=today_meals, today=today,
+        recent_messages=recent_messages)
 
 @app.route('/menu')
 def menu_page():
@@ -325,7 +336,8 @@ def add_task():
         title=data['title'],
         points=int(data.get('points', 1)),
         assigned_to=data.get('assigned_to') or None,
-        due_date=due
+        due_date=due,
+        room=data.get('room') or None
     )
     db.session.add(task)
     db.session.commit()
@@ -342,6 +354,8 @@ def update_task(task_id):
     if 'due_date' in data:
         try: task.due_date = datetime.fromisoformat(data['due_date']) if data['due_date'] else None
         except: task.due_date = None
+    if 'room' in data:
+        task.room = data.get('room') or None
     db.session.commit()
     return jsonify(_task_to_dict(task))
 
@@ -484,7 +498,8 @@ def _task_to_dict(task):
         'done_by': task.done_by,
         'doer_name': task.doer.name if task.doer else None,
         'done_at': task.done_at.isoformat() if task.done_at else None,
-        'due_date': task.due_date.isoformat() if task.due_date else None
+        'due_date': task.due_date.isoformat() if task.due_date else None,
+        'room': task.room
     }
 
 def _event_occurrences(event, all_members, horizon_days=180):
@@ -669,6 +684,62 @@ def copy_week():
     db.session.commit()
     return jsonify({'copied': copied})
 
+def _msg_dict(m):
+    return {
+        'id': m.id,
+        'content': m.content,
+        'member_id': m.member_id,
+        'member_name': m.member.name if m.member else 'Maison',
+        'member_avatar': m.member.avatar if m.member else '🏡',
+        'member_color': m.member.color if m.member else '#2eb49e',
+        'created_at': m.created_at.isoformat() if m.created_at else None,
+        'pinned': m.pinned
+    }
+
+@app.route('/messages')
+def messages_page():
+    members = Member.query.all()
+    messages = FamilyMessage.query.order_by(FamilyMessage.pinned.desc(), FamilyMessage.created_at.desc()).limit(100).all()
+    return render_template('messages.html', members=members, messages=messages)
+
+@app.route('/api/messages', methods=['GET'])
+def get_messages():
+    msgs = FamilyMessage.query.order_by(FamilyMessage.pinned.desc(), FamilyMessage.created_at.desc()).limit(50).all()
+    return jsonify([_msg_dict(m) for m in msgs])
+
+@app.route('/api/messages', methods=['POST'])
+def add_message():
+    data = request.json
+    content = (data.get('content') or '').strip()[:300]
+    if not content:
+        return jsonify({'error': 'empty'}), 400
+    msg = FamilyMessage(content=content, member_id=data.get('member_id') or None)
+    db.session.add(msg)
+    db.session.commit()
+    return jsonify(_msg_dict(msg)), 201
+
+@app.route('/api/messages/<int:msg_id>/pin', methods=['PUT'])
+def pin_message(msg_id):
+    msg = db.session.get(FamilyMessage, msg_id)
+    if not msg:
+        return jsonify({'error': 'not found'}), 404
+    msg.pinned = not msg.pinned
+    db.session.commit()
+    return jsonify(_msg_dict(msg))
+
+@app.route('/api/messages/<int:msg_id>', methods=['DELETE'])
+def delete_message(msg_id):
+    msg = db.session.get(FamilyMessage, msg_id)
+    if not msg:
+        return jsonify({'error': 'not found'}), 404
+    db.session.delete(msg)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/sw.js')
+def service_worker():
+    return send_file(os.path.join(basedir, 'static', 'sw.js'), mimetype='application/javascript')
+
 @app.route('/api/backup')
 def backup_db():
     try:
@@ -742,7 +813,18 @@ def _auto_migrate():
         'ALTER TABLE event ADD COLUMN recurrence_end DATETIME',
         'ALTER TABLE event ADD COLUMN parent_id INTEGER',
         'ALTER TABLE task ADD COLUMN due_date DATETIME',
+        'ALTER TABLE task ADD COLUMN room VARCHAR(50)',
     ]
+    # Nouvelle table messages
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS family_message (
+            id INTEGER PRIMARY KEY,
+            content TEXT NOT NULL,
+            member_id INTEGER REFERENCES member(id),
+            created_at DATETIME,
+            pinned BOOLEAN DEFAULT 0
+        )
+    ''')
     for sql in migrations:
         try:
             cur.execute(sql)

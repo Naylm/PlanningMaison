@@ -7,16 +7,27 @@
 <div class="dashboard-grid">
 
     <!-- Tâches à faire -->
-    <div class="card fade-in" style="grid-column: 1 / -1;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
-            <h2 style="margin:0;">✅ À faire <span style="font-size:0.9rem; color:var(--sidebar-text); font-weight:400;">({{ pending|length }})</span></h2>
+    <div class="card fade-in full-width">
+        <div class="card-header" style="margin-bottom:1.2rem;">
+            <h2 class="section-title">✅ À faire <span class="count-badge">({{ pending|length }})</span></h2>
             <button class="btn" onclick="openModal('taskModal')"><i class="fas fa-plus"></i> Nouvelle tâche</button>
+        </div>
+        <!-- Filtres par pièce -->
+        <div class="shop-cats" id="roomFilters">
+            <button class="shop-cat active" data-room="">Toutes</button>
+            <button class="shop-cat" data-room="🏠 Salon">🏠 Salon</button>
+            <button class="shop-cat" data-room="🍳 Cuisine">🍳 Cuisine</button>
+            <button class="shop-cat" data-room="🛀 Salle de bain">🛀 Salle de bain</button>
+            <button class="shop-cat" data-room="🛌 Chambre">🛌 Chambre</button>
+            <button class="shop-cat" data-room="🧹 Entrée / couloir">🧹 Entrée</button>
+            <button class="shop-cat" data-room="🌱 Extérieur">🌱 Extérieur</button>
+            <button class="shop-cat" data-room="📦 Divers">📦 Divers</button>
         </div>
 
         {% if pending %}
         <ul style="list-style:none;">
             {% for task in pending %}
-            <li class="task-item" data-id="{{ task.id }}">
+            <li class="task-item" data-id="{{ task.id }}" data-room="{{ task.room or '' }}">
                 <!-- Sélecteur de membre pour valider -->
                 <select id="doer-{{ task.id }}" style="padding:0.4rem 0.6rem; border-radius:8px; border:1px solid rgba(0,0,0,0.12); background:var(--card-bg); color:var(--text-color); font-size:0.82rem; max-width:130px;">
                     <option value="">Qui l'a fait ?</option>
@@ -41,6 +52,9 @@
                         {% if task.due_date < now %}<span>(en retard)</span>{% endif %}
                     </div>
                     {% endif %}
+                    {% if task.room %}
+                    <div class="task-due"><i class="fas fa-map-marker-alt"></i> {{ task.room }}</div>
+                    {% endif %}
                 </div>
 
                 <span class="points-badge">⭐ {{ task.points }} pt{{ 's' if task.points > 1 }}</span>
@@ -51,6 +65,7 @@
                     data-points="{{ task.points }}"
                     data-member="{{ task.assigned_to or '' }}"
                     data-due="{{ task.due_date.strftime('%Y-%m-%dT%H:%M') if task.due_date else '' }}"
+                    data-room="{{ task.room or '' }}"
                     style="opacity:0.5; font-size:0.85rem; color:var(--primary);">
                     <i class="fas fa-edit"></i>
                 </button>
@@ -194,6 +209,19 @@
                 <label>Date limite (optionnel)</label>
                 <input type="datetime-local" id="editTaskDue" style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid rgba(0,0,0,0.1); background:var(--card-bg); color:var(--text-color);">
             </div>
+            <div class="form-group">
+                <label>Pièce (optionnel)</label>
+                <select id="editTaskRoom" style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid rgba(0,0,0,0.1); background:var(--card-bg); color:var(--text-color);">
+                    <option value="">-- Aucune --</option>
+                    <option>🏠 Salon</option>
+                    <option>🍳 Cuisine</option>
+                    <option>🛀 Salle de bain</option>
+                    <option>🛌 Chambre</option>
+                    <option>🧹 Entrée / couloir</option>
+                    <option>🌱 Extérieur</option>
+                    <option>📦 Divers</option>
+                </select>
+            </div>
             <button type="submit" class="btn w-full">Enregistrer</button>
         </form>
     </div>
@@ -231,6 +259,19 @@
             <div class="form-group">
                 <label>Date limite (optionnel)</label>
                 <input type="datetime-local" id="taskDue" style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid rgba(0,0,0,0.1); background:var(--card-bg); color:var(--text-color);">
+            </div>
+            <div class="form-group">
+                <label>Pièce (optionnel)</label>
+                <select id="taskRoom" style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid rgba(0,0,0,0.1); background:var(--card-bg); color:var(--text-color);">
+                    <option value="">-- Aucune --</option>
+                    <option>🏠 Salon</option>
+                    <option>🍳 Cuisine</option>
+                    <option>🛀 Salle de bain</option>
+                    <option>🛌 Chambre</option>
+                    <option>🧹 Entrée / couloir</option>
+                    <option>🌱 Extérieur</option>
+                    <option>📦 Divers</option>
+                </select>
             </div>
             <button type="submit" class="btn w-full">Ajouter la tâche</button>
         </form>
