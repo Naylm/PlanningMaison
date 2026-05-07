@@ -689,9 +689,37 @@ def list_backups():
     )
     return jsonify([{'name': f, 'size': os.path.getsize(os.path.join(BACKUP_DIR, f))} for f in copies])
 
+def _auto_migrate():
+    import sqlite3 as _sql
+    db_path = os.path.join(basedir, 'fredo.db')
+    if not os.path.exists(db_path):
+        return
+    con = _sql.connect(db_path)
+    cur = con.cursor()
+    migrations = [
+        'ALTER TABLE shopping_item ADD COLUMN category VARCHAR(50)',
+        'ALTER TABLE note ADD COLUMN archived BOOLEAN DEFAULT 0',
+        'ALTER TABLE event ADD COLUMN recurrence VARCHAR(10)',
+        'ALTER TABLE event ADD COLUMN recurrence_end DATETIME',
+        'ALTER TABLE event ADD COLUMN parent_id INTEGER',
+    ]
+    for sql in migrations:
+        try:
+            cur.execute(sql)
+        except Exception:
+            pass
+    for tbl, cols in [
+        ('activity_log', 'id INTEGER PRIMARY KEY, action VARCHAR(200) NOT NULL, member_id INTEGER, created_at DATETIME'),
+        ('monthly_score', 'id INTEGER PRIMARY KEY, member_id INTEGER NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, points INTEGER DEFAULT 0'),
+    ]:
+        cur.execute(f'CREATE TABLE IF NOT EXISTS {tbl} ({cols})')
+    con.commit()
+    con.close()
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        _auto_migrate()
     t = threading.Thread(target=_backup_loop, daemon=True)
     t.start()
     app.run(debug=DEBUG, host='0.0.0.0', port=5000)
