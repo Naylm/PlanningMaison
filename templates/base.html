@@ -65,10 +65,13 @@
 
         <div class="sidebar-footer">
             <div class="save-status">
-                <i class="fas fa-cloud-upload-alt"></i> Sauvegarde auto active
+                <i class="fas fa-clock"></i> Sauvegarde auto journalière
             </div>
+            <button onclick="triggerBackup()" class="backup-link" style="background:none; border:none; cursor:pointer; padding:0; text-align:left; width:100%;">
+                <i class="fas fa-camera"></i> Sauvegarder maintenant
+            </button>
             <a href="{{ url_for('backup_db') }}" class="backup-link">
-                <i class="fas fa-download"></i> Sauvegarder les données
+                <i class="fas fa-download"></i> Télécharger fredo.db
             </a>
         </div>
     </nav>

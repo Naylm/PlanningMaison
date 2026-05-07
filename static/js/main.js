@@ -763,6 +763,17 @@ window.resetPoints = async function() {
     }
 }
 
+window.triggerBackup = async function() {
+    showToast('Sauvegarde en cours...', 'info');
+    const res = await fetch('/api/backup/now', { method: 'POST' });
+    if (res.ok) {
+        const data = await res.json();
+        showToast(`✅ Sauvegarde créée (${data.copies} copie${data.copies > 1 ? 's' : ''} conservée${data.copies > 1 ? 's' : ''})`);
+    } else {
+        showToast('Erreur lors de la sauvegarde', 'danger');
+    }
+};
+
 window.deleteTask = async function(taskId) {
     const confirmed = await customConfirm('Supprimer la tâche', 'Voulez-vous vraiment supprimer cette tâche ?');
     if (confirmed) {

@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 import os
+import shutil
+import threading
+import time
 from sqlalchemy import func
 
 DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
@@ -585,7 +588,61 @@ def backup_db():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ==========================================
+# Sauvegarde automatique journalière
+# ==========================================
+BACKUP_DIR = os.path.join(basedir, 'backups')
+BACKUP_KEEP = 7
+BACKUP_INTERVAL = 24 * 3600  # secondes
+
+def _do_backup():
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+    src = os.path.join(basedir, 'fredo.db')
+    if not os.path.exists(src):
+        return
+    stamp = datetime.now().strftime('%Y-%m-%d_%Hh%M')
+    dst = os.path.join(BACKUP_DIR, f'fredo_{stamp}.db')
+    shutil.copy2(src, dst)
+    # Garder seulement les N plus récentes
+    copies = sorted(
+        [f for f in os.listdir(BACKUP_DIR) if f.startswith('fredo_') and f.endswith('.db')]
+    )
+    for old in copies[:-BACKUP_KEEP]:
+        os.remove(os.path.join(BACKUP_DIR, old))
+    print(f'[Backup] {dst}')
+
+def _backup_loop():
+    # Attendre 1 min au démarrage avant le premier backup
+    time.sleep(60)
+    while True:
+        try:
+            _do_backup()
+        except Exception as e:
+            print(f'[Backup] Erreur : {e}')
+        time.sleep(BACKUP_INTERVAL)
+
+@app.route('/api/backup/now', methods=['POST'])
+def manual_backup():
+    try:
+        _do_backup()
+        copies = sorted(os.listdir(BACKUP_DIR)) if os.path.exists(BACKUP_DIR) else []
+        return jsonify({'success': True, 'copies': len(copies), 'latest': copies[-1] if copies else None})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/backup/list')
+def list_backups():
+    if not os.path.exists(BACKUP_DIR):
+        return jsonify([])
+    copies = sorted(
+        [f for f in os.listdir(BACKUP_DIR) if f.startswith('fredo_') and f.endswith('.db')],
+        reverse=True
+    )
+    return jsonify([{'name': f, 'size': os.path.getsize(os.path.join(BACKUP_DIR, f))} for f in copies])
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+    t = threading.Thread(target=_backup_loop, daemon=True)
+    t.start()
     app.run(debug=DEBUG, host='0.0.0.0', port=5000)
