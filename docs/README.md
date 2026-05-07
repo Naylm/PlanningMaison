@@ -1,6 +1,6 @@
 # 🏡 Planning Maison
 
-Application web familiale simple et rapide pour organiser le quotidien : calendrier partagé, tâches ménagères avec classement gamifié, liste de courses, et notes.
+Application web familiale pour organiser le quotidien : calendrier partagé, tâches ménagères gamifiées, liste de courses, notes, menu de la semaine, messages familiaux — installable sur mobile comme une vraie app.
 
 ---
 
@@ -57,13 +57,17 @@ Gardez cette copie dans un endroit sûr (clé USB, cloud…).
 
 | Section | Ce que ça fait |
 |---|---|
-| 📊 Tableau de bord | Vue d'ensemble : événements, tâches, classement, courses |
-| � Calendrier | Planning familial, cliquer sur un jour pour ajouter un événement |
-| ✅ Tâches | Tâches ménagères avec points ⭐, classement mensuel gamifié 🏆 |
-| 🛒 Courses | Liste partagée, cocher les articles, vider les cochés d'un clic |
-| 📝 Notes | Post-its colorés pour les infos importantes |
-| 👥 Membres | Profils avec avatar emoji et couleur personnalisée |
+| 📊 Tableau de bord | Vue d'ensemble : événements, tâches, classement, courses, derniers messages |
+| 📅 Calendrier | Planning familial, récurrence d'événements, gestion par membre |
+| ✅ Tâches | Points ⭐, classement gamifié 🏆, filtres par pièce 🏠, récurrence automatique 🔄 |
+| 🛒 Courses | Liste partagée par catégorie, vider les cochés d'un clic |
+| 📝 Notes | Post-its colorés, archivage |
+| 🍽️ Menu | Planification des repas par semaine, ajout automatique au panier |
+| 💬 Messages | Chat familial persistant, messages épinglés 📌, rafraîchissement automatique |
+| 👥 Membres | Profils avec avatar emoji ou photo, couleur, classement mensuel |
+| 📱 PWA | Installable sur mobile (icône écran d'accueil, plein écran) |
 | 🌙 Mode sombre | Bouton en haut à droite |
+| 🔄 Mises à jour | Détection et installation automatique depuis GitHub |
 
 ---
 
@@ -169,16 +173,30 @@ Pour que Planning Maison ressemble à une vraie application sur votre téléphon
 
 ```text
 PlanningMaison/
-├── app.py                  → Serveur & API
-├── fredo.db                → Base de données (NE PAS SUPPRIMER)
+├── app.py                  → Serveur Flask & API
+├── fredo.db                → Base de données SQLite (NE PAS SUPPRIMER)
 ├── requirements.txt        → Dépendances Python
+├── version.txt             → Version installée
 ├── Lancer_Planning.bat     → Lancement Windows
-├── run.sh                  → Lancement Linux
-├── GUIDE_UTILISATEUR.md    → Guide complet
+├── run.sh                  → Lancement Linux/macOS
 ├── static/
-│   ├── css/style.css
-│   └── js/main.js
-└── templates/              → Pages HTML
+│   ├── css/style.css       → Styles (thème, dark mode, responsive)
+│   ├── js/main.js          → JavaScript principal
+│   ├── manifest.json       → PWA manifest
+│   ├── sw.js               → Service Worker (cache offline)
+│   └── icons/              → Icônes PWA (192px, 512px)
+├── templates/
+│   ├── base.html           → Layout commun + nav mobile
+│   ├── dashboard.html
+│   ├── calendar.html
+│   ├── tasks.html
+│   ├── shopping.html
+│   ├── notes.html
+│   ├── menu.html
+│   ├── messages.html       → Chat familial
+│   └── members.html
+└── docs/
+    └── README.md
 ```
 
 ---
@@ -187,7 +205,9 @@ PlanningMaison/
 
 - **Backend** : Python 3, Flask, Flask-SQLAlchemy, SQLite
 - **Frontend** : HTML5, CSS3, JavaScript vanilla
+- **PWA** : Service Worker, Web App Manifest, cache offline
 - **Librairies** : FullCalendar 6, FontAwesome 6, Google Fonts (Inter)
+- **Mise à jour** : Auto-update depuis les releases GitHub
 
 ---
 *Développé pour une organisation familiale simple et efficace.* 🏡
