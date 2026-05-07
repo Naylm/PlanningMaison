@@ -64,6 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFormListener('addEventForm', handleAddEvent);
     setupFormListener('editEventForm', handleUpdateEvent);
     setupFormListener('addTaskForm', handleAddTask);
+    setupFormListener('editTaskForm', handleEditTask);
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.edit-task-btn');
+        if (btn) window.openEditTask(btn);
+    });
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -727,15 +733,48 @@ async function handleAddTask(e) {
     const title = document.getElementById('taskTitle').value.trim();
     const points = document.querySelector('input[name="taskPoints"]:checked')?.value || 1;
     const assigned_to = document.getElementById('taskMember')?.value || '';
+    const due_date = document.getElementById('taskDue')?.value || '';
 
     const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, points: parseInt(points), assigned_to })
+        body: JSON.stringify({ title, points: parseInt(points), assigned_to, due_date: due_date || null })
     });
     if (res.ok) {
         closeModal('taskModal');
+        document.getElementById('addTaskForm')?.reset();
         showToast('Tâche ajoutée !');
+        location.reload();
+    }
+}
+
+window.openEditTask = function(btn) {
+    const d = btn.dataset;
+    document.getElementById('editTaskId').value = d.id;
+    document.getElementById('editTaskTitle').value = d.title;
+    document.getElementById('editTaskDue').value = d.due || '';
+    const pts = document.querySelector(`input[name="editTaskPoints"][value="${d.points}"]`);
+    if (pts) pts.checked = true;
+    const sel = document.getElementById('editTaskMember');
+    if (sel) sel.value = d.member || '';
+    openModal('editTaskModal');
+};
+
+async function handleEditTask(e) {
+    e.preventDefault();
+    const id = document.getElementById('editTaskId').value;
+    const title = document.getElementById('editTaskTitle').value.trim();
+    const points = document.querySelector('input[name="editTaskPoints"]:checked')?.value || 1;
+    const assigned_to = document.getElementById('editTaskMember')?.value || '';
+    const due_date = document.getElementById('editTaskDue')?.value || '';
+    const res = await fetch(`/api/tasks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, points: parseInt(points), assigned_to, due_date: due_date || null })
+    });
+    if (res.ok) {
+        closeModal('editTaskModal');
+        showToast('Tâche mise à jour !');
         location.reload();
     }
 }
@@ -756,7 +795,13 @@ window.completeTask = async function(taskId, memberSelectId, btnEl) {
         const rect = btnEl.getBoundingClientRect();
         spawnConfetti(rect.left + rect.width / 2, rect.top);
         showToast('Tâche accomplie ! 🎉');
-        setTimeout(() => location.reload(), 600);
+        const li = btnEl.closest('.task-item');
+        if (li) {
+            li.classList.add('completing');
+            setTimeout(() => location.reload(), 600);
+        } else {
+            setTimeout(() => location.reload(), 600);
+        }
     }
 }
 

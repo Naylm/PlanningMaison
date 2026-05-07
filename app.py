@@ -28,7 +28,24 @@ app.jinja_env.globals['timedelta'] = _timedelta
 app.jinja_env.globals['timedelta_7'] = _timedelta(days=6)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'fredo.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'dev-key-fredo-1234'
+def _load_secret_key():
+    env_file = os.path.join(basedir, '.env')
+    key = os.environ.get('SECRET_KEY')
+    if key:
+        return key
+    if os.path.exists(env_file):
+        with open(env_file) as _f:
+            for line in _f:
+                line = line.strip()
+                if line.startswith('SECRET_KEY='):
+                    return line.split('=', 1)[1].strip().strip('"').strip("'")
+    import secrets as _sec
+    key = _sec.token_hex(32)
+    with open(env_file, 'a') as _f:
+        _f.write(f'\nSECRET_KEY={key}\n')
+    return key
+
+app.config['SECRET_KEY'] = _load_secret_key()
 
 db = SQLAlchemy(app)
 
@@ -116,6 +133,7 @@ class Task(db.Model):
     done_by = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     done_at = db.Column(db.DateTime, nullable=True)
+    due_date = db.Column(db.DateTime, nullable=True)
     assignee = db.relationship('Member', foreign_keys=[assigned_to], backref=db.backref('assigned_tasks', lazy=True))
     doer = db.relationship('Member', foreign_keys=[done_by], backref=db.backref('done_tasks', lazy=True))
 
@@ -188,7 +206,7 @@ def tasks_page():
     pending = Task.query.filter_by(is_done=False).order_by(Task.points.desc()).all()
     done = Task.query.filter_by(is_done=True).order_by(Task.done_at.desc()).limit(20).all()
     leaderboard = _get_leaderboard()
-    return render_template('tasks.html', members=members, pending=pending, done=done, leaderboard=leaderboard)
+    return render_template('tasks.html', members=members, pending=pending, done=done, leaderboard=leaderboard, now=datetime.now(timezone.utc))
 
 # API: Membres
 @app.route('/api/members', methods=['POST'])
@@ -207,7 +225,8 @@ def add_member():
 @app.route('/api/members/<int:member_id>', methods=['PUT'])
 def update_member(member_id):
     data = request.json
-    member = Member.query.get_or_404(member_id)
+    member = db.session.get(Member, member_id)
+    if not member: return jsonify({'error': 'not found'}), 404
     member.name = data['name']
     member.color = data['color']
     member.avatar = data['avatar']
@@ -298,14 +317,33 @@ def get_tasks():
 @app.route('/api/tasks', methods=['POST'])
 def add_task():
     data = request.json
+    due = None
+    if data.get('due_date'):
+        try: due = datetime.fromisoformat(data['due_date'])
+        except: pass
     task = Task(
         title=data['title'],
         points=int(data.get('points', 1)),
-        assigned_to=data.get('assigned_to') or None
+        assigned_to=data.get('assigned_to') or None,
+        due_date=due
     )
     db.session.add(task)
     db.session.commit()
     return jsonify(_task_to_dict(task)), 201
+
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+def update_task(task_id):
+    data = request.json
+    task = db.session.get(Task, task_id)
+    if not task: return jsonify({'error': 'not found'}), 404
+    task.title = data.get('title', task.title)
+    task.points = int(data.get('points', task.points))
+    task.assigned_to = data.get('assigned_to') or None
+    if 'due_date' in data:
+        try: task.due_date = datetime.fromisoformat(data['due_date']) if data['due_date'] else None
+        except: task.due_date = None
+    db.session.commit()
+    return jsonify(_task_to_dict(task))
 
 
 @app.route('/api/tasks/<int:task_id>/complete', methods=['PUT'])
@@ -445,7 +483,8 @@ def _task_to_dict(task):
         'assignee_avatar': task.assignee.avatar if task.assignee else None,
         'done_by': task.done_by,
         'doer_name': task.doer.name if task.doer else None,
-        'done_at': task.done_at.isoformat() if task.done_at else None
+        'done_at': task.done_at.isoformat() if task.done_at else None,
+        'due_date': task.due_date.isoformat() if task.due_date else None
     }
 
 def _event_occurrences(event, all_members, horizon_days=180):
@@ -702,6 +741,7 @@ def _auto_migrate():
         'ALTER TABLE event ADD COLUMN recurrence VARCHAR(10)',
         'ALTER TABLE event ADD COLUMN recurrence_end DATETIME',
         'ALTER TABLE event ADD COLUMN parent_id INTEGER',
+        'ALTER TABLE task ADD COLUMN due_date DATETIME',
     ]
     for sql in migrations:
         try:

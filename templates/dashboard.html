@@ -7,7 +7,7 @@
 
     <!-- Événements à venir -->
     <div class="card fade-in">
-        <h3>📅 Événements à venir</h3>
+        <h3 class="section-title">📅 Événements à venir</h3>
         <ul class="todo-list" style="margin-top: 10px;">
             {% for event in events %}
                 <li class="todo-item" style="border-left: 4px solid {{ event.member.color if event.member else 'var(--primary)' }}; padding-left: 10px;">
@@ -18,15 +18,15 @@
                 </li>
             {% endfor %}
             {% if not events %}
-                <p style="color:var(--sidebar-text); font-size:0.9rem;">Aucun événement prévu.</p>
+                <p class="text-muted text-sm">Aucun événement prévu.</p>
             {% endif %}
         </ul>
-        <a href="{{ url_for('calendar_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.85rem;">Voir le calendrier</a>
+        <a href="{{ url_for('calendar_page') }}" class="btn w-full mt-2">Voir le calendrier</a>
     </div>
 
     <!-- Tâches urgentes -->
     <div class="card fade-in" style="animation-delay:0.05s;">
-        <h3>✅ Tâches à faire <span style="font-size:0.8rem; color:var(--sidebar-text);">({{ pending_tasks|length }})</span></h3>
+        <h3 class="section-title">✅ Tâches à faire <span class="count-badge">({{ pending_tasks|length }})</span></h3>
         <ul style="list-style:none; margin-top:10px;">
             {% for task in pending_tasks %}
             <li style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid rgba(0,0,0,0.05);">
@@ -36,15 +36,15 @@
             </li>
             {% endfor %}
             {% if not pending_tasks %}
-                <p style="color:var(--sidebar-text); font-size:0.9rem;">🎉 Rien à faire !</p>
+                <p class="text-muted text-sm">🎉 Rien à faire !</p>
             {% endif %}
         </ul>
-        <a href="{{ url_for('tasks_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.85rem; background-color: var(--success);">Gérer les tâches</a>
+        <a href="{{ url_for('tasks_page') }}" class="btn btn-success w-full mt-2">Gérer les tâches</a>
     </div>
 
     <!-- Classement du mois -->
     <div class="card fade-in" style="animation-delay:0.1s;">
-        <h3>🏆 Classement du mois</h3>
+        <h3 class="section-title">🏆 Classement du mois</h3>
         {% if leaderboard %}
         <ul class="leaderboard-list" style="margin-top:10px;">
             {% set max_pts = leaderboard[0].points_month if leaderboard[0].points_month > 0 else 1 %}
@@ -65,14 +65,14 @@
             {% endfor %}
         </ul>
         {% else %}
-        <p style="color:var(--sidebar-text); font-size:0.9rem; margin-top:10px;">Ajoutez des membres pour voir le classement.</p>
+        <p class="text-muted text-sm mt-1">Ajoutez des membres pour voir le classement.</p>
         {% endif %}
-        <a href="{{ url_for('tasks_page') }}" class="btn" style="margin-top:15px; width:100%; justify-content:center; font-size:0.85rem; background-color:var(--secondary);">Voir les détails</a>
+        <a href="{{ url_for('tasks_page') }}" class="btn btn-secondary w-full mt-2">Voir les détails</a>
     </div>
 
     <!-- Courses en cours -->
     <div class="card fade-in" style="animation-delay:0.15s;">
-        <h3>🛒 Liste de courses <span style="font-size:0.8rem; color:var(--sidebar-text);">({{ shopping|length }})</span></h3>
+        <h3 class="section-title">🛒 Liste de courses <span class="count-badge">({{ shopping|length }})</span></h3>
         <ul class="todo-list" style="margin-top: 10px;">
             {% for item in shopping %}
                 <li class="todo-item" style="padding: 5px 0;">
@@ -80,10 +80,10 @@
                 </li>
             {% endfor %}
             {% if not shopping %}
-                <p style="color:var(--sidebar-text); font-size:0.9rem;">La liste est vide !</p>
+                <p class="text-muted text-sm">La liste est vide !</p>
             {% endif %}
         </ul>
-        <a href="{{ url_for('shopping_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.85rem;">Gérer les courses</a>
+        <a href="{{ url_for('shopping_page') }}" class="btn w-full mt-2">Gérer les courses</a>
     </div>
 
     <!-- Menu du jour -->
@@ -102,14 +102,14 @@
             {% endfor %}
         </div>
         {% else %}
-        <p style="color:var(--sidebar-text); font-size:0.88rem; margin-top:8px;">Aucun repas planifié aujourd'hui.</p>
-        <a href="{{ url_for('menu_page') }}" class="btn" style="margin-top:10px; font-size:0.82rem; padding:0.4rem 0.9rem;">Planifier</a>
+        <p class="text-muted text-sm mt-1">Aucun repas planifié aujourd'hui.</p>
+        <a href="{{ url_for('menu_page') }}" class="btn btn-sm mt-1">Planifier</a>
         {% endif %}
     </div>
 
     <!-- Notes récentes -->
     <div class="card fade-in" style="animation-delay:0.2s;">
-        <h3>📝 Notes récentes</h3>
+        <h3 class="section-title">📝 Notes récentes</h3>
         <div style="margin-top: 10px;">
             {% for note in notes %}
                 <div style="background-color: {{ note.color }}; padding: 8px 12px; margin-bottom: 6px; border-radius:8px;">
@@ -118,10 +118,10 @@
                 </div>
             {% endfor %}
             {% if not notes %}
-                <p style="color:var(--sidebar-text); font-size:0.9rem;">Pas de notes récentes.</p>
+                <p class="text-muted text-sm">Pas de notes récentes.</p>
             {% endif %}
         </div>
-        <a href="{{ url_for('notes_page') }}" class="btn" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 0.85rem; background-color: var(--secondary);">Voir les notes</a>
+        <a href="{{ url_for('notes_page') }}" class="btn btn-secondary w-full mt-2">Voir les notes</a>
     </div>
 
 </div>

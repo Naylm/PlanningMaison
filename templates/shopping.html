@@ -32,18 +32,24 @@
         </div>
 
         <ul class="todo-list" id="shoppingList">
-            {% for item in shopping_items %}
-                <li class="todo-item {% if item.is_completed %}completed{% endif %}" data-id="{{ item.id }}" data-cat="{{ item.category or '' }}">
-                    <input type="checkbox" id="item-{{ item.id }}" {% if item.is_completed %}checked{% endif %}>
-                    <label for="item-{{ item.id }}">
-                        {% if item.category %}<span style="font-size:0.72rem; background:rgba(128,128,128,0.12); border-radius:10px; padding:1px 6px; margin-right:5px;">{{ item.category }}</span>{% endif %}
-                        {{ item.name }}
-                    </label>
-                    <button class="delete-btn" onclick="deleteShoppingItem({{ item.id }})"><i class="fas fa-trash"></i></button>
-                </li>
-            {% endfor %}
             {% if not shopping_items %}
-                <p id="emptyShopping" style="color:var(--sidebar-text);">La liste de courses est vide. Parfait !</p>
+                <p id="emptyShopping" class="text-muted">La liste de courses est vide. Parfait !</p>
+            {% else %}
+                {% set ns = namespace(current_cat=none) %}
+                {% for item in shopping_items | sort(attribute='category') %}
+                    {% set cat = item.category or '' %}
+                    {% if cat != ns.current_cat %}
+                        {% set ns.current_cat = cat %}
+                        <li class="cat-group-header">
+                            {% if cat %}{{ cat }}{% else %}<span>Divers</span>{% endif %}
+                        </li>
+                    {% endif %}
+                    <li class="todo-item {% if item.is_completed %}completed{% endif %}" data-id="{{ item.id }}" data-cat="{{ cat }}">
+                        <input type="checkbox" id="item-{{ item.id }}" {% if item.is_completed %}checked{% endif %}>
+                        <label for="item-{{ item.id }}">{{ item.name }}</label>
+                        <button class="delete-btn" onclick="deleteShoppingItem({{ item.id }})"><i class="fas fa-trash"></i></button>
+                    </li>
+                {% endfor %}
             {% endif %}
         </ul>
         <form id="addShoppingForm" style="margin-top: 15px; display: flex; gap: 10px; flex-wrap:wrap;">
