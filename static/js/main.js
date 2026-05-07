@@ -162,33 +162,27 @@ function customConfirm(title, message) {
         const modal = document.getElementById('confirmModal');
         const titleEl = document.getElementById('confirmTitle');
         const messageEl = document.getElementById('confirmMessage');
-        const yesBtn = document.getElementById('confirmBtnYes');
-        const noBtn = document.getElementById('confirmBtnNo');
 
         titleEl.innerText = title;
         messageEl.innerText = message;
-        
+
+        // Cloner les boutons pour effacer TOUS les anciens listeners
+        const oldYes = document.getElementById('confirmBtnYes');
+        const oldNo  = document.getElementById('confirmBtnNo');
+        const yesBtn = oldYes.cloneNode(true);
+        const noBtn  = oldNo.cloneNode(true);
+        oldYes.replaceWith(yesBtn);
+        oldNo.replaceWith(noBtn);
+
+        const done = (val) => {
+            closeModal('confirmModal');
+            resolve(val);
+        };
+
+        yesBtn.addEventListener('click', () => done(true),  { once: true });
+        noBtn.addEventListener('click',  () => done(false), { once: true });
+
         openModal('confirmModal');
-
-        const handleYes = () => {
-            closeModal('confirmModal');
-            resolve(true);
-            cleanup();
-        };
-
-        const handleNo = () => {
-            closeModal('confirmModal');
-            resolve(false);
-            cleanup();
-        };
-
-        function cleanup() {
-            yesBtn.removeEventListener('click', handleYes);
-            noBtn.removeEventListener('click', handleNo);
-        }
-
-        yesBtn.addEventListener('click', handleYes);
-        noBtn.addEventListener('click', handleNo);
     });
 }
 
