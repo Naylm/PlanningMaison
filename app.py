@@ -719,16 +719,15 @@ def _auto_migrate():
 # ==========================================
 # Mise à jour automatique
 # ==========================================
-GITHUB_REPO = 'Naylm/PlanningMaison'
-GITHUB_API  = f'https://api.github.com/repos/{GITHUB_REPO}/commits/main'
-GITHUB_ZIP  = f'https://github.com/{GITHUB_REPO}/archive/refs/heads/main.zip'
+GITHUB_REPO  = 'Naylm/PlanningMaison'
+GITHUB_RELEASES_API = f'https://api.github.com/repos/{GITHUB_REPO}/releases'
 VERSION_FILE = os.path.join(basedir, 'version.txt')
 UPDATE_CHECK_INTERVAL = 2 * 60  # 2 minutes
 
 # Conservés lors de la mise à jour
 PRESERVE = {'fredo.db', 'backups', 'venv', '.env', 'version.txt', 'scripts', 'docs'}
 
-_update_available = {'flag': False, 'sha': '', 'message': ''}
+_update_available = {'flag': False, 'tag': '', 'message': '', 'current_tag': ''}
 
 def _read_local_version():
     try:
@@ -737,23 +736,30 @@ def _read_local_version():
     except Exception:
         return ''
 
-def _write_local_version(sha):
+def _write_local_version(tag):
     with open(VERSION_FILE, 'w') as f:
-        f.write(sha.strip() + '\n')
+        f.write(tag.strip() + '\n')
+
+def _fetch_releases():
+    import urllib.request, json as _json
+    req = urllib.request.Request(GITHUB_RELEASES_API,
+          headers={'User-Agent': 'PlanningMaison-Updater'})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return _json.loads(r.read())
 
 def _check_update_once():
-    import urllib.request, json as _json
     try:
-        req = urllib.request.Request(GITHUB_API,
-              headers={'User-Agent': 'PlanningMaison-Updater'})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            data = _json.loads(r.read())
-        latest_sha = data['sha']
-        local_sha  = _read_local_version()
-        if latest_sha and local_sha and latest_sha != local_sha:
-            msg = data.get('commit', {}).get('message', 'Nouvelle version disponible')
+        releases = _fetch_releases()
+        if not releases:
+            return
+        latest = releases[0]
+        latest_tag = latest['tag_name']
+        local_tag  = _read_local_version()
+        _update_available['current_tag'] = local_tag
+        if latest_tag and local_tag and latest_tag != local_tag:
+            msg = latest.get('name') or latest.get('body') or 'Nouvelle version disponible'
             _update_available['flag'] = True
-            _update_available['sha']  = latest_sha
+            _update_available['tag']  = latest_tag
             _update_available['message'] = msg.split('\n')[0][:80]
         else:
             _update_available['flag'] = False
@@ -766,73 +772,116 @@ def _update_check_loop():
         _check_update_once()
         time.sleep(UPDATE_CHECK_INTERVAL)
 
+def _install_from_zip(zip_url, new_tag):
+    import urllib.request, zipfile, tempfile, sys, shutil
+    print(f'[Update] Téléchargement {zip_url}...')
+    req = urllib.request.Request(zip_url, headers={'User-Agent': 'PlanningMaison-Updater'})
+    with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp:
+        tmp_path = tmp.name
+        with urllib.request.urlopen(req, timeout=60) as r:
+            tmp.write(r.read())
+
+    print('[Update] Extraction...')
+    tmp_dir = tempfile.mkdtemp()
+    with zipfile.ZipFile(tmp_path) as z:
+        z.extractall(tmp_dir)
+    os.unlink(tmp_path)
+
+    extracted = [d for d in os.listdir(tmp_dir) if os.path.isdir(os.path.join(tmp_dir, d))]
+    if not extracted:
+        print('[Update] Erreur : dossier extrait introuvable')
+        return False
+    src_dir = os.path.join(tmp_dir, extracted[0])
+
+    print('[Update] Copie des fichiers...')
+    for item in os.listdir(src_dir):
+        if item in PRESERVE:
+            continue
+        s = os.path.join(src_dir, item)
+        d = os.path.join(basedir, item)
+        if os.path.isdir(s):
+            if os.path.exists(d):
+                shutil.rmtree(d)
+            shutil.copytree(s, d)
+        else:
+            shutil.copy2(s, d)
+
+    _write_local_version(new_tag)
+    _update_available['flag'] = False
+    _update_available['current_tag'] = new_tag
+    print(f'[Update] Installé : {new_tag}')
+    return True
+
 @app.route('/api/update/check')
 def update_check():
+    _update_available['current_tag'] = _read_local_version()
     return jsonify(_update_available)
 
 @app.route('/api/update/apply', methods=['POST'])
 def update_apply():
-    import urllib.request, zipfile, tempfile, sys
+    import sys
     def _do_update():
         try:
-            # 1. Télécharger le ZIP
-            print('[Update] Téléchargement...')
-            req = urllib.request.Request(GITHUB_ZIP,
-                  headers={'User-Agent': 'PlanningMaison-Updater'})
-            with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp:
-                tmp_path = tmp.name
-                with urllib.request.urlopen(req, timeout=60) as r:
-                    tmp.write(r.read())
-
-            # 2. Extraire dans dossier temp
-            print('[Update] Extraction...')
-            tmp_dir = tempfile.mkdtemp()
-            with zipfile.ZipFile(tmp_path) as z:
-                z.extractall(tmp_dir)
-            os.unlink(tmp_path)
-
-            # Trouver le dossier extrait (ex: PlanningMaison-main/)
-            extracted = [d for d in os.listdir(tmp_dir)
-                         if os.path.isdir(os.path.join(tmp_dir, d))]
-            if not extracted:
-                print('[Update] Erreur : dossier extrait introuvable')
+            releases = _fetch_releases()
+            if not releases:
+                print('[Update] Aucune release trouvée')
                 return
-            src_dir = os.path.join(tmp_dir, extracted[0])
-
-            # 3. Copier les fichiers (sauf fichiers à préserver)
-            print('[Update] Copie des fichiers...')
-            for item in os.listdir(src_dir):
-                if item in PRESERVE:
-                    continue
-                s = os.path.join(src_dir, item)
-                d = os.path.join(basedir, item)
-                if os.path.isdir(s):
-                    if os.path.exists(d):
-                        import shutil as _sh
-                        _sh.rmtree(d)
-                    import shutil as _sh
-                    _sh.copytree(s, d)
-                else:
-                    import shutil as _sh
-                    _sh.copy2(s, d)
-
-            # 4. Mettre à jour version.txt
-            _write_local_version(_update_available['sha'])
-            _update_available['flag'] = False
-            print('[Update] Fichiers mis à jour.')
-
-            # 5. Redémarrer Flask (compatible Windows + Linux)
+            latest = releases[0]
+            zip_url = latest['zipball_url']
+            new_tag = latest['tag_name']
+            if not _install_from_zip(zip_url, new_tag):
+                return
             time.sleep(1)
             print('[Update] Redémarrage...')
             import subprocess
-            subprocess.Popen([sys.executable] + sys.argv,
-                             cwd=basedir)
+            subprocess.Popen([sys.executable] + sys.argv, cwd=basedir)
             os._exit(0)
-
         except Exception as e:
             print(f'[Update] Erreur lors de la mise à jour : {e}')
 
     t = threading.Thread(target=_do_update, daemon=True)
+    t.start()
+    return jsonify({'started': True})
+
+@app.route('/api/releases')
+def list_releases():
+    try:
+        releases = _fetch_releases()
+        current = _read_local_version()
+        result = []
+        for r in releases[:10]:
+            result.append({
+                'tag': r['tag_name'],
+                'name': r.get('name') or r['tag_name'],
+                'body': (r.get('body') or '').split('\n')[0][:80],
+                'date': r.get('published_at', '')[:10],
+                'zip_url': r['zipball_url'],
+                'current': r['tag_name'] == current,
+            })
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rollback', methods=['POST'])
+def rollback():
+    import sys
+    data = request.json or {}
+    tag = data.get('tag', '')
+    zip_url = data.get('zip_url', '')
+    if not tag or not zip_url:
+        return jsonify({'error': 'tag et zip_url requis'}), 400
+    def _do_rollback():
+        try:
+            if not _install_from_zip(zip_url, tag):
+                return
+            time.sleep(1)
+            print(f'[Rollback] Redémarrage vers {tag}...')
+            import subprocess
+            subprocess.Popen([sys.executable] + sys.argv, cwd=basedir)
+            os._exit(0)
+        except Exception as e:
+            print(f'[Rollback] Erreur : {e}')
+    t = threading.Thread(target=_do_rollback, daemon=True)
     t.start()
     return jsonify({'started': True})
 

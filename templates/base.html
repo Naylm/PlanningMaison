@@ -65,6 +65,7 @@
             <div class="save-status">
                 <i class="fas fa-clock"></i> Sauvegarde auto journalière
             </div>
+            <div id="versionBadge" style="font-size:0.72rem; color:var(--sidebar-text); opacity:0.6; margin-bottom:4px;"></div>
             <button onclick="triggerBackup()" class="backup-link" style="background:none; border:none; cursor:pointer; padding:0; text-align:left; width:100%;">
                 <i class="fas fa-camera"></i> Sauvegarder maintenant
             </button>
@@ -74,6 +75,9 @@
             <button id="updateBtn" onclick="openUpdateModal()" class="backup-link" style="display:none; background:none; border:none; cursor:pointer; padding:0; text-align:left; width:100%; color:#e74c3c; font-weight:600;">
                 <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#e74c3c; margin-right:5px; animation:pulse 1.5s infinite;"></span>
                 <i class="fas fa-arrow-circle-up"></i> Mise à jour disponible !
+            </button>
+            <button onclick="openRollbackModal()" class="backup-link" style="background:none; border:none; cursor:pointer; padding:0; text-align:left; width:100%;">
+                <i class="fas fa-history"></i> Versions précédentes
             </button>
         </div>
     </nav>
@@ -191,6 +195,22 @@
                 </div>
                 <button type="submit" class="btn">Sauvegarder</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Rollback -->
+    <div id="rollbackModal" class="modal">
+        <div class="modal-content card" style="max-width:480px;">
+            <span class="close-modal" onclick="closeModal('rollbackModal')">&times;</span>
+            <h2 style="margin-bottom:0.5rem;">&#9199; Versions précédentes</h2>
+            <p style="color:var(--sidebar-text); font-size:0.85rem; margin-bottom:1rem;">Sélectionne une version pour revenir en arrière.</p>
+            <div id="rollbackList" style="max-height:320px; overflow-y:auto;"></div>
+            <div id="rollbackProgress" style="display:none; margin-top:1rem;">
+                <div style="background:rgba(128,128,128,0.15); border-radius:8px; overflow:hidden; height:8px;">
+                    <div id="rollbackBar" style="height:100%; width:0%; background:var(--primary); transition:width 0.4s; border-radius:8px;"></div>
+                </div>
+                <p id="rollbackStatus" style="font-size:0.82rem; color:var(--sidebar-text); margin-top:8px; text-align:center;"></p>
+            </div>
         </div>
     </div>
 

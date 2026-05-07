@@ -852,10 +852,12 @@ function initUpdatePoller() {
                 const msg = document.getElementById('updateMsg');
                 if (msg) msg.textContent = `Nouveauté : ${data.message || 'Améliorations disponibles'}`;
             }
+            const badge = document.getElementById('versionBadge');
+            if (badge && data.current_tag) badge.textContent = data.current_tag;
         } catch (e) {}
     }
     checkUpdate();
-    setInterval(checkUpdate, 10 * 60 * 1000);
+    setInterval(checkUpdate, 2 * 60 * 1000);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -916,6 +918,71 @@ window.applyUpdate = async function() {
                 setTimeout(() => location.reload(), 800);
                 return;
             }
+        } catch(e) {}
+        setTimeout(() => waitForRestart(attempts - 1), 2000);
+    }
+    setTimeout(() => waitForRestart(15), 6000);
+};
+
+window.openRollbackModal = async function() {
+    const list = document.getElementById('rollbackList');
+    list.innerHTML = '<p style="color:var(--sidebar-text); font-size:0.85rem;">Chargement...</p>';
+    openModal('rollbackModal');
+    try {
+        const res = await fetch('/api/releases');
+        const releases = await res.json();
+        if (releases.error) {
+            list.innerHTML = `<p style="color:var(--danger);">Erreur : ${releases.error}</p>`;
+            return;
+        }
+        if (!releases.length) {
+            list.innerHTML = '<p style="color:var(--sidebar-text);">Aucune version disponible.</p>';
+            return;
+        }
+        list.innerHTML = releases.map(r => `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.5rem; border-bottom:1px solid rgba(128,128,128,0.12);">
+                <div>
+                    <span style="font-weight:600; font-size:0.9rem;">${r.tag}</span>
+                    ${r.current ? '<span style="font-size:0.72rem; background:var(--success); color:#fff; border-radius:8px; padding:1px 7px; margin-left:6px;">actuelle</span>' : ''}
+                    <span style="font-size:0.75rem; color:var(--sidebar-text); margin-left:6px;">${r.date}</span>
+                    <div style="font-size:0.78rem; color:var(--sidebar-text); margin-top:2px;">${r.body || ''}</div>
+                </div>
+                ${!r.current ? `<button class="btn" style="padding:0.3rem 0.7rem; font-size:0.78rem; margin-left:10px; white-space:nowrap;" onclick="applyRollback('${r.tag}', '${r.zip_url}')">Installer</button>` : '<span style="font-size:0.78rem; color:var(--sidebar-text);">&#10003; Installée</span>'}
+            </div>
+        `).join('');
+    } catch(e) {
+        list.innerHTML = '<p style="color:var(--danger);">Impossible de contacter GitHub.</p>';
+    }
+};
+
+window.applyRollback = async function(tag, zip_url) {
+    const list = document.getElementById('rollbackList');
+    const progress = document.getElementById('rollbackProgress');
+    const bar = document.getElementById('rollbackBar');
+    const status = document.getElementById('rollbackStatus');
+    list.style.display = 'none';
+    progress.style.display = 'block';
+    const steps = [
+        { w: 20, txt: `📥 Téléchargement de ${tag}...` },
+        { w: 50, txt: '📦 Extraction des fichiers...' },
+        { w: 80, txt: '📂 Application des changements...' },
+        { w: 92, txt: '🔄 Redémarrage...' },
+    ];
+    let i = 0;
+    const tick = setInterval(() => {
+        if (i < steps.length) { bar.style.width = steps[i].w + '%'; status.textContent = steps[i].txt; i++; }
+    }, 2000);
+    try {
+        await fetch('/api/rollback', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({tag, zip_url}) });
+    } catch(e) {}
+    setTimeout(() => clearInterval(tick), 10000);
+    bar.style.width = '95%';
+    status.textContent = '⏳ En attente du redémarrage...';
+    async function waitForRestart(attempts) {
+        if (attempts <= 0) { bar.style.width='100%'; status.textContent='✅ Terminé !'; setTimeout(()=>location.reload(),800); return; }
+        try {
+            const r = await fetch('/api/update/check');
+            if (r.ok) { clearInterval(tick); bar.style.width='100%'; status.textContent=`✅ Version ${tag} installée !`; setTimeout(()=>location.reload(),800); return; }
         } catch(e) {}
         setTimeout(() => waitForRestart(attempts - 1), 2000);
     }
