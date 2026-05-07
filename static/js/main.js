@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFormListener('editMemberForm', handleUpdateMember);
     setupFormListener('addNoteForm', handleAddNote);
     setupFormListener('editNoteForm', handleUpdateNote);
-    setupFormListener('addShoppingForm', handleAddShoppingItem);
+    // addShoppingForm géré dans shopping.html (avec support catégorie)
     setupFormListener('addEventForm', handleAddEvent);
     setupFormListener('editEventForm', handleUpdateEvent);
     setupFormListener('addTaskForm', handleAddTask);
