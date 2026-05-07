@@ -853,7 +853,10 @@ function initUpdatePoller() {
                 if (msg) msg.textContent = `Nouveauté : ${data.message || 'Améliorations disponibles'}`;
             }
             const badge = document.getElementById('versionBadge');
-            if (badge && data.current_tag) badge.textContent = data.current_tag;
+            if (badge && data.current_tag) {
+                const v = data.current_tag;
+                badge.textContent = v.startsWith('v') ? v : v.substring(0, 7);
+            }
         } catch (e) {}
     }
     checkUpdate();
