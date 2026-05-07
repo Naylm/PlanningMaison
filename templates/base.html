@@ -73,6 +73,10 @@
             <a href="{{ url_for('backup_db') }}" class="backup-link">
                 <i class="fas fa-download"></i> Télécharger fredo.db
             </a>
+            <button id="updateBtn" onclick="openUpdateModal()" class="backup-link" style="display:none; background:none; border:none; cursor:pointer; padding:0; text-align:left; width:100%; color:#e74c3c; font-weight:600;">
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#e74c3c; margin-right:5px; animation:pulse 1.5s infinite;"></span>
+                <i class="fas fa-arrow-circle-up"></i> Mise à jour disponible !
+            </button>
         </div>
     </nav>
 
@@ -192,6 +196,25 @@
                 </div>
                 <button type="submit" class="btn">Sauvegarder</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Mise à jour -->
+    <div id="updateModal" class="modal">
+        <div class="modal-content card" style="max-width:420px;">
+            <span class="close-modal" onclick="closeModal('updateModal')">&times;</span>
+            <h2 style="margin-bottom:0.5rem;">🔄 Mise à jour disponible</h2>
+            <p id="updateMsg" style="color:var(--sidebar-text); font-size:0.9rem; margin:0.8rem 0 1.2rem;"></p>
+            <div id="updateProgress" style="display:none; margin-bottom:1rem;">
+                <div style="background:rgba(128,128,128,0.15); border-radius:8px; overflow:hidden; height:8px;">
+                    <div id="updateBar" style="height:100%; width:0%; background:var(--primary); transition:width 0.4s; border-radius:8px;"></div>
+                </div>
+                <p id="updateStatus" style="font-size:0.82rem; color:var(--sidebar-text); margin-top:8px; text-align:center;">Téléchargement en cours...</p>
+            </div>
+            <div id="updateActions" style="display:flex; gap:10px;">
+                <button class="btn" style="flex:1; background:var(--primary);" onclick="applyUpdate()"><i class="fas fa-download"></i> Mettre à jour</button>
+                <button class="btn" style="flex:1;" onclick="closeModal('updateModal')">Plus tard</button>
+            </div>
         </div>
     </div>
 

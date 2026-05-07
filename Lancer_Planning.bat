@@ -82,6 +82,12 @@ echo   (fermez-la pour arreter l'application)
 echo  ============================================
 echo.
 
+:: Generer version.txt si absent ou vide
+if not exist "version.txt" (
+    where git >nul 2>&1 && git rev-parse HEAD > version.txt 2>nul
+    if not exist "version.txt" echo unknown > version.txt
+)
+
 :: Ouvrir le navigateur apres 2 secondes
 start "" cmd /c "timeout /t 2 /nobreak >nul && start http://127.0.0.1:5000"
 

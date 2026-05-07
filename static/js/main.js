@@ -765,6 +765,87 @@ window.resetPoints = async function() {
     }
 }
 
+// ==========================================
+// Mise à jour automatique
+// ==========================================
+(function initUpdatePoller() {
+    async function checkUpdate() {
+        try {
+            const res = await fetch('/api/update/check');
+            if (!res.ok) return;
+            const data = await res.json();
+            const btn = document.getElementById('updateBtn');
+            if (btn) btn.style.display = data.flag ? '' : 'none';
+            if (data.flag) {
+                const msg = document.getElementById('updateMsg');
+                if (msg) msg.textContent = `Nouveauté : ${data.message || 'Améliorations disponibles'}`;
+            }
+        } catch (e) {}
+    }
+    checkUpdate();
+    setInterval(checkUpdate, 10 * 60 * 1000);
+})();
+
+window.openUpdateModal = function() {
+    openModal('updateModal');
+};
+
+window.applyUpdate = async function() {
+    const actions = document.getElementById('updateActions');
+    const progress = document.getElementById('updateProgress');
+    const bar = document.getElementById('updateBar');
+    const status = document.getElementById('updateStatus');
+
+    actions.style.display = 'none';
+    progress.style.display = 'block';
+
+    // Animation de la barre (simulée, le vrai travail est côté serveur)
+    const steps = [
+        { w: 15, txt: '📥 Téléchargement de la mise à jour...' },
+        { w: 45, txt: '📦 Extraction des fichiers...' },
+        { w: 75, txt: '📂 Application des changements...' },
+        { w: 90, txt: '🔄 Redémarrage du serveur...' },
+    ];
+    let i = 0;
+    const tick = setInterval(() => {
+        if (i < steps.length) {
+            bar.style.width = steps[i].w + '%';
+            status.textContent = steps[i].txt;
+            i++;
+        }
+    }, 2000);
+
+    try {
+        await fetch('/api/update/apply', { method: 'POST' });
+    } catch(e) {}
+
+    // Attendre que le serveur redémarre puis recharger
+    setTimeout(() => clearInterval(tick), 10000);
+    bar.style.width = '95%';
+    status.textContent = '⏳ En attente du redémarrage...';
+
+    async function waitForRestart(attempts) {
+        if (attempts <= 0) {
+            status.textContent = '✅ Redémarrage terminé !';
+            bar.style.width = '100%';
+            setTimeout(() => location.reload(), 800);
+            return;
+        }
+        try {
+            const r = await fetch('/api/update/check');
+            if (r.ok) {
+                clearInterval(tick);
+                bar.style.width = '100%';
+                status.textContent = '✅ Mise à jour réussie ! Rechargement...';
+                setTimeout(() => location.reload(), 800);
+                return;
+            }
+        } catch(e) {}
+        setTimeout(() => waitForRestart(attempts - 1), 2000);
+    }
+    setTimeout(() => waitForRestart(15), 6000);
+};
+
 window.archiveNote = async function(id) {
     const res = await fetch(`/api/notes/${id}/archive`, { method: 'PUT' });
     if (res.ok) {

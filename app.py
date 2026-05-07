@@ -716,10 +716,127 @@ def _auto_migrate():
     con.commit()
     con.close()
 
+# ==========================================
+# Mise à jour automatique
+# ==========================================
+GITHUB_REPO = 'Naylm/PlanningMaison'
+GITHUB_API  = f'https://api.github.com/repos/{GITHUB_REPO}/commits/main'
+GITHUB_ZIP  = f'https://github.com/{GITHUB_REPO}/archive/refs/heads/main.zip'
+VERSION_FILE = os.path.join(basedir, 'version.txt')
+UPDATE_CHECK_INTERVAL = 10 * 60  # 10 minutes
+
+# Conservés lors de la mise à jour
+PRESERVE = {'fredo.db', 'backups', 'venv', '.env', 'version.txt'}
+
+_update_available = {'flag': False, 'sha': '', 'message': ''}
+
+def _read_local_version():
+    try:
+        with open(VERSION_FILE) as f:
+            return f.read().strip()
+    except Exception:
+        return ''
+
+def _write_local_version(sha):
+    with open(VERSION_FILE, 'w') as f:
+        f.write(sha.strip() + '\n')
+
+def _check_update_once():
+    import urllib.request, json as _json
+    try:
+        req = urllib.request.Request(GITHUB_API,
+              headers={'User-Agent': 'PlanningMaison-Updater'})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = _json.loads(r.read())
+        latest_sha = data['sha']
+        local_sha  = _read_local_version()
+        if latest_sha and local_sha and latest_sha != local_sha:
+            msg = data.get('commit', {}).get('message', 'Nouvelle version disponible')
+            _update_available['flag'] = True
+            _update_available['sha']  = latest_sha
+            _update_available['message'] = msg.split('\n')[0][:80]
+        else:
+            _update_available['flag'] = False
+    except Exception as e:
+        print(f'[Update] Vérification échouée : {e}')
+
+def _update_check_loop():
+    time.sleep(30)   # attendre 30s après démarrage
+    while True:
+        _check_update_once()
+        time.sleep(UPDATE_CHECK_INTERVAL)
+
+@app.route('/api/update/check')
+def update_check():
+    return jsonify(_update_available)
+
+@app.route('/api/update/apply', methods=['POST'])
+def update_apply():
+    import urllib.request, zipfile, tempfile, sys
+    def _do_update():
+        try:
+            # 1. Télécharger le ZIP
+            print('[Update] Téléchargement...')
+            req = urllib.request.Request(GITHUB_ZIP,
+                  headers={'User-Agent': 'PlanningMaison-Updater'})
+            with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp:
+                tmp_path = tmp.name
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    tmp.write(r.read())
+
+            # 2. Extraire dans dossier temp
+            print('[Update] Extraction...')
+            tmp_dir = tempfile.mkdtemp()
+            with zipfile.ZipFile(tmp_path) as z:
+                z.extractall(tmp_dir)
+            os.unlink(tmp_path)
+
+            # Trouver le dossier extrait (ex: PlanningMaison-main/)
+            extracted = [d for d in os.listdir(tmp_dir)
+                         if os.path.isdir(os.path.join(tmp_dir, d))]
+            if not extracted:
+                print('[Update] Erreur : dossier extrait introuvable')
+                return
+            src_dir = os.path.join(tmp_dir, extracted[0])
+
+            # 3. Copier les fichiers (sauf fichiers à préserver)
+            print('[Update] Copie des fichiers...')
+            for item in os.listdir(src_dir):
+                if item in PRESERVE:
+                    continue
+                s = os.path.join(src_dir, item)
+                d = os.path.join(basedir, item)
+                if os.path.isdir(s):
+                    if os.path.exists(d):
+                        import shutil as _sh
+                        _sh.rmtree(d)
+                    import shutil as _sh
+                    _sh.copytree(s, d)
+                else:
+                    import shutil as _sh
+                    _sh.copy2(s, d)
+
+            # 4. Mettre à jour version.txt
+            _write_local_version(_update_available['sha'])
+            _update_available['flag'] = False
+            print('[Update] Fichiers mis à jour.')
+
+            # 5. Redémarrer Flask (remplace le process courant)
+            time.sleep(1)
+            print('[Update] Redémarrage...')
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+
+        except Exception as e:
+            print(f'[Update] Erreur lors de la mise à jour : {e}')
+
+    t = threading.Thread(target=_do_update, daemon=True)
+    t.start()
+    return jsonify({'started': True})
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         _auto_migrate()
-    t = threading.Thread(target=_backup_loop, daemon=True)
-    t.start()
+    threading.Thread(target=_backup_loop, daemon=True).start()
+    threading.Thread(target=_update_check_loop, daemon=True).start()
     app.run(debug=DEBUG, host='0.0.0.0', port=5000)

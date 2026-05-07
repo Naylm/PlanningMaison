@@ -1177,3 +1177,9 @@ header { display: flex; align-items: center; justify-content: space-between; fle
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+@keyframes pulse {
+    0%   { opacity: 1;   transform: scale(1); }
+    50%  { opacity: 0.5; transform: scale(1.4); }
+    100% { opacity: 1;   transform: scale(1); }
+}
