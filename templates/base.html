@@ -237,7 +237,11 @@
         <div class="modal-content card" style="max-width:420px;">
             <span class="close-modal" onclick="closeModal('updateModal')">&times;</span>
             <h2 style="margin-bottom:0.5rem;">🔄 Mise à jour disponible</h2>
-            <p id="updateMsg" style="color:var(--sidebar-text); font-size:0.9rem; margin:0.8rem 0 1.2rem;"></p>
+            <p id="updateMsg" style="color:var(--sidebar-text); font-size:0.9rem; margin:0.5rem 0 0;"></p>
+            <div id="updateChangelog" style="display:none; margin:0.8rem 0 1.2rem; padding:0.75rem 1rem; background:var(--bg-color); border-radius:10px; border:1px solid rgba(128,128,128,0.15); max-height:220px; overflow-y:auto;">
+                <div style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--sidebar-text); margin-bottom:0.5rem;">📄 Notes de version</div>
+                <pre id="updateBody" style="margin:0; font-size:0.82rem; line-height:1.6; white-space:pre-wrap; font-family:inherit; color:var(--text-color);"></pre>
+            </div>
             <div id="updateProgress" style="display:none; margin-bottom:1rem;">
                 <div style="background:rgba(128,128,128,0.15); border-radius:8px; overflow:hidden; height:8px;">
                     <div id="updateBar" style="height:100%; width:0%; background:var(--primary); transition:width 0.4s; border-radius:8px;"></div>

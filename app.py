@@ -849,7 +849,7 @@ UPDATE_CHECK_INTERVAL = 2 * 60  # 2 minutes
 # Conservés lors de la mise à jour
 PRESERVE = {'fredo.db', 'backups', 'venv', '.env', 'version.txt', 'scripts', 'docs'}
 
-_update_available = {'flag': False, 'tag': '', 'message': '', 'current_tag': ''}
+_update_available = {'flag': False, 'tag': '', 'message': '', 'body': '', 'current_tag': ''}
 
 def _read_local_version():
     try:
@@ -880,9 +880,11 @@ def _check_update_once():
         _update_available['current_tag'] = local_tag
         if latest_tag and local_tag and latest_tag != local_tag:
             msg = latest.get('name') or latest.get('body') or 'Nouvelle version disponible'
+            body = latest.get('body') or ''
             _update_available['flag'] = True
             _update_available['tag']  = latest_tag
             _update_available['message'] = msg.split('\n')[0][:80]
+            _update_available['body'] = body[:1500]
         else:
             _update_available['flag'] = False
     except Exception as e:

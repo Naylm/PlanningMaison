@@ -915,7 +915,15 @@ function initUpdatePoller() {
             if (btn) btn.style.display = data.flag ? '' : 'none';
             if (data.flag) {
                 const msg = document.getElementById('updateMsg');
-                if (msg) msg.textContent = `Nouveauté : ${data.message || 'Améliorations disponibles'}`;
+                if (msg) msg.textContent = `Nouveauté : ${data.tag || ''}  —  ${data.message || 'Améliorations disponibles'}`;
+                const changelog = document.getElementById('updateChangelog');
+                const body = document.getElementById('updateBody');
+                if (body && data.body) {
+                    body.textContent = data.body;
+                    if (changelog) changelog.style.display = '';
+                } else if (changelog) {
+                    changelog.style.display = 'none';
+                }
             }
             const badge = document.getElementById('versionBadge');
             if (badge && data.current_tag) {
