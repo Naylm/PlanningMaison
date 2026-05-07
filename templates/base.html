@@ -62,6 +62,11 @@
             </li>
         </ul>
 
+        <button id="updateBtn" onclick="openUpdateModal()" class="backup-link" style="display:none; margin-top:1rem; background:rgba(231,76,60,0.08); border:1.5px solid #e74c3c; border-radius:10px; cursor:pointer; text-align:left; width:100%; color:#e74c3c; font-weight:600; padding:0.7rem 1rem;">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#e74c3c; margin-right:5px; animation:pulse 1.5s infinite;"></span>
+            <i class="fas fa-arrow-circle-up"></i> Mise à jour disponible !
+        </button>
+
         <div class="sidebar-footer">
             <div class="save-status">
                 <i class="fas fa-clock"></i> Sauvegarde auto journalière
@@ -73,10 +78,6 @@
             <a href="{{ url_for('backup_db') }}" class="backup-link">
                 <i class="fas fa-download"></i> Télécharger fredo.db
             </a>
-            <button id="updateBtn" onclick="openUpdateModal()" class="backup-link" style="display:none; background:none; border:none; cursor:pointer; padding:0; text-align:left; width:100%; color:#e74c3c; font-weight:600;">
-                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#e74c3c; margin-right:5px; animation:pulse 1.5s infinite;"></span>
-                <i class="fas fa-arrow-circle-up"></i> Mise à jour disponible !
-            </button>
             <button onclick="openRollbackModal()" class="backup-link" style="background:none; border:none; cursor:pointer; padding:0; text-align:left; width:100%;">
                 <i class="fas fa-history"></i> Versions précédentes
             </button>
