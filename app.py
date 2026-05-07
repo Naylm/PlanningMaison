@@ -307,25 +307,6 @@ def add_task():
     db.session.commit()
     return jsonify(_task_to_dict(task)), 201
 
-@app.route('/history')
-def history_page():
-    from datetime import date as _date
-    scores_raw = db.session.query(MonthlyScore).order_by(MonthlyScore.year.desc(), MonthlyScore.month.desc()).limit(60).all()
-    months = {}
-    for s in scores_raw:
-        key = f"{s.year}-{s.month:02d}"
-        if key not in months:
-            months[key] = []
-        months[key].append(s)
-    for key in months:
-        months[key].sort(key=lambda x: x.points, reverse=True)
-    MONTH_NAMES = ['', 'Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
-    month_list = []
-    for key, entries in months.items():
-        y, m = int(key.split('-')[0]), int(key.split('-')[1])
-        month_list.append({'key': key, 'label': f"{MONTH_NAMES[m]} {y}", 'entries': entries})
-    logs = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(100).all()
-    return render_template('history.html', month_list=month_list, logs=logs)
 
 @app.route('/api/tasks/<int:task_id>/complete', methods=['PUT'])
 def complete_task(task_id):

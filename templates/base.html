@@ -59,9 +59,6 @@
             <li class="nav-item {% if request.path == '/menu' %}active{% endif %}">
                 <a href="{{ url_for('menu_page') }}"><span>🍽️</span> Menu</a>
             </li>
-            <li class="nav-item {% if request.path == '/history' %}active{% endif %}">
-                <a href="{{ url_for('history_page') }}"><span>📈</span> Historique</a>
-            </li>
         </ul>
 
         <div class="sidebar-footer">
@@ -101,9 +98,6 @@
             </li>
             <li class="{% if request.path == '/menu' %}active{% endif %}">
                 <a href="{{ url_for('menu_page') }}"><span class="nav-icon">🍽️</span>Menu</a>
-            </li>
-            <li class="{% if request.path == '/history' %}active{% endif %}">
-                <a href="{{ url_for('history_page') }}"><span class="nav-icon">📈</span>Historique</a>
             </li>
         </ul>
     </nav>
