@@ -905,11 +905,12 @@ def _check_update_once():
         local_tag  = _read_local_version()
         _update_available['current_tag'] = local_tag
         if latest_tag and local_tag and latest_tag != local_tag:
-            msg = latest.get('name') or latest.get('body') or 'Nouvelle version disponible'
             body = latest.get('body') or ''
+            first_line = next((l.strip() for l in body.splitlines() if l.strip()), '')
+            msg = first_line or latest.get('name') or 'Nouvelle version disponible'
             _update_available['flag'] = True
             _update_available['tag']  = latest_tag
-            _update_available['message'] = msg.split('\n')[0][:80]
+            _update_available['message'] = msg[:80]
             _update_available['body'] = body[:1500]
         else:
             _update_available['flag'] = False

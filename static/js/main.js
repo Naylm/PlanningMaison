@@ -919,7 +919,8 @@ function initUpdatePoller() {
             if (btn) btn.style.display = data.flag ? '' : 'none';
             if (data.flag) {
                 const msg = document.getElementById('updateMsg');
-                if (msg) msg.textContent = `Nouveauté : ${data.tag || ''}  —  ${data.message || 'Améliorations disponibles'}`;
+                const summary = data.body ? data.body.split('\n').find(l => l.trim()) || data.message : data.message;
+                if (msg) msg.textContent = `Nouveauté : ${data.tag || ''} — ${summary || 'Améliorations disponibles'}`;
                 const changelog = document.getElementById('updateChangelog');
                 const body = document.getElementById('updateBody');
                 if (body && data.body) {
