@@ -54,7 +54,10 @@ body {
     box-shadow: 2px 0 10px rgba(0,0,0,0.03);
     position: fixed;
     height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
     z-index: 100;
+    -webkit-overflow-scrolling: touch;
 }
 
 .brand {
