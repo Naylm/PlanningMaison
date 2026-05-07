@@ -158,8 +158,13 @@ function showToast(message, type = 'success') {
 }
 
 function customConfirm(title, message) {
+    // Si une confirmation est déjà en attente, la résoudre comme 'Non' avant d'en ouvrir une nouvelle
+    if (window._confirmResolve) {
+        window._confirmResolve(false);
+        window._confirmResolve = null;
+    }
+
     return new Promise((resolve) => {
-        const modal = document.getElementById('confirmModal');
         const titleEl = document.getElementById('confirmTitle');
         const messageEl = document.getElementById('confirmMessage');
 
@@ -175,9 +180,12 @@ function customConfirm(title, message) {
         oldNo.replaceWith(noBtn);
 
         const done = (val) => {
+            window._confirmResolve = null;
             closeModal('confirmModal');
             resolve(val);
         };
+
+        window._confirmResolve = (val) => { done(val); };
 
         yesBtn.addEventListener('click', () => done(true),  { once: true });
         noBtn.addEventListener('click',  () => done(false), { once: true });
@@ -206,6 +214,11 @@ window.closeModal = function(modalId) {
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
         closeModal(event.target.id);
+        // Si c'est le modal de confirmation, résoudre la Promise en attente
+        if (event.target.id === 'confirmModal' && window._confirmResolve) {
+            window._confirmResolve(false);
+            window._confirmResolve = null;
+        }
     }
 }
 
