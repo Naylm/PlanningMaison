@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import os
 from sqlalchemy import func
 
+DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
+
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -49,7 +51,23 @@ class ShoppingItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     is_completed = db.Column(db.Boolean, default=False)
+    category = db.Column(db.String(50), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ActivityLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    action = db.Column(db.String(200), nullable=False)
+    member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    member = db.relationship('Member', backref=db.backref('logs', lazy=True))
+
+class MonthlyScore(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    month = db.Column(db.Integer, nullable=False)
+    points = db.Column(db.Integer, default=0)
+    member = db.relationship('Member', backref=db.backref('scores', lazy=True))
 
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -197,14 +215,17 @@ def delete_member(member_id):
     db.session.commit()
     return jsonify({'success': True})
 
+def _log(action, member_id=None):
+    db.session.add(ActivityLog(action=action, member_id=member_id))
+
 # API: Liste de courses
 @app.route('/api/shopping', methods=['POST'])
 def add_shopping_item():
     data = request.json
-    new_item = ShoppingItem(name=data['name'])
+    new_item = ShoppingItem(name=data['name'], category=data.get('category') or None)
     db.session.add(new_item)
     db.session.commit()
-    return jsonify({'id': new_item.id, 'name': new_item.name, 'is_completed': new_item.is_completed})
+    return jsonify({'id': new_item.id, 'name': new_item.name, 'is_completed': new_item.is_completed, 'category': new_item.category})
 
 @app.route('/api/shopping/<int:item_id>', methods=['PUT'])
 def toggle_shopping_item(item_id):
@@ -264,6 +285,26 @@ def add_task():
     db.session.commit()
     return jsonify(_task_to_dict(task)), 201
 
+@app.route('/history')
+def history_page():
+    from datetime import date as _date
+    scores_raw = db.session.query(MonthlyScore).order_by(MonthlyScore.year.desc(), MonthlyScore.month.desc()).limit(60).all()
+    months = {}
+    for s in scores_raw:
+        key = f"{s.year}-{s.month:02d}"
+        if key not in months:
+            months[key] = []
+        months[key].append(s)
+    for key in months:
+        months[key].sort(key=lambda x: x.points, reverse=True)
+    MONTH_NAMES = ['', 'Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+    month_list = []
+    for key, entries in months.items():
+        y, m = int(key.split('-')[0]), int(key.split('-')[1])
+        month_list.append({'key': key, 'label': f"{MONTH_NAMES[m]} {y}", 'entries': entries})
+    logs = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(100).all()
+    return render_template('history.html', month_list=month_list, logs=logs)
+
 @app.route('/api/tasks/<int:task_id>/complete', methods=['PUT'])
 def complete_task(task_id):
     data = request.json
@@ -271,6 +312,10 @@ def complete_task(task_id):
     task.is_done = True
     task.done_by = data.get('member_id') or None
     task.done_at = datetime.now(timezone.utc)
+    doer = Member.query.get(task.done_by) if task.done_by else None
+    doer_name = doer.name if doer else 'Quelqu\u2019un'
+    pts_label = 'pts' if task.points > 1 else 'pt'
+    _log(f"\u2705 {doer_name} a accompli \"{task.title}\" (+{task.points} {pts_label})", task.done_by)
     db.session.commit()
     return jsonify(_task_to_dict(task))
 
@@ -292,9 +337,58 @@ def delete_task(task_id):
 
 @app.route('/api/tasks/reset-points', methods=['POST'])
 def reset_points():
+    now = datetime.now(timezone.utc)
+    for m in Member.query.all():
+        pts = db.session.query(func.sum(Task.points)).filter(
+            Task.done_by == m.id, Task.is_done == True,
+            func.strftime('%Y-%m', Task.done_at) == now.strftime('%Y-%m')
+        ).scalar() or 0
+        if pts > 0:
+            existing = MonthlyScore.query.filter_by(member_id=m.id, year=now.year, month=now.month).first()
+            if existing:
+                existing.points = pts
+            else:
+                db.session.add(MonthlyScore(member_id=m.id, year=now.year, month=now.month, points=pts))
     Task.query.filter_by(is_done=True).delete()
     db.session.commit()
     return jsonify({'success': True})
+
+@app.route('/api/leaderboard/history')
+def leaderboard_history():
+    scores = db.session.query(MonthlyScore).order_by(MonthlyScore.year.desc(), MonthlyScore.month.desc()).limit(60).all()
+    result = {}
+    for s in scores:
+        key = f"{s.year}-{s.month:02d}"
+        if key not in result:
+            result[key] = []
+        result[key].append({'member_id': s.member_id, 'name': s.member.name, 'avatar': s.member.avatar, 'color': s.member.color, 'points': s.points})
+    for key in result:
+        result[key].sort(key=lambda x: x['points'], reverse=True)
+    return jsonify(result)
+
+@app.route('/api/search')
+def search():
+    q = request.args.get('q', '').strip()
+    if len(q) < 2:
+        return jsonify({'events': [], 'tasks': [], 'notes': [], 'shopping': []})
+    like = f'%{q}%'
+    events = Event.query.filter(Event.title.ilike(like)).limit(10).all()
+    tasks = Task.query.filter(Task.title.ilike(like)).limit(10).all()
+    notes = Note.query.filter((Note.title.ilike(like)) | (Note.content.ilike(like))).limit(10).all()
+    shopping = ShoppingItem.query.filter(ShoppingItem.name.ilike(like)).limit(10).all()
+    return jsonify({
+        'events': [{'id': e.id, 'title': e.title, 'start': e.start_time.isoformat()} for e in events],
+        'tasks': [{'id': t.id, 'title': t.title, 'is_done': t.is_done, 'points': t.points} for t in tasks],
+        'notes': [{'id': n.id, 'title': n.title, 'color': n.color} for n in notes],
+        'shopping': [{'id': s.id, 'name': s.name, 'is_completed': s.is_completed} for s in shopping]
+    })
+
+@app.route('/api/activity')
+def get_activity():
+    logs = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(50).all()
+    return jsonify([{'id': l.id, 'action': l.action, 'member': l.member.name if l.member else None,
+                     'avatar': l.member.avatar if l.member else '🏡',
+                     'created_at': l.created_at.isoformat()} for l in logs])
 
 @app.route('/api/leaderboard')
 def get_leaderboard():
@@ -462,6 +556,28 @@ def delete_meal(meal_id):
     db.session.commit()
     return jsonify({'success': True})
 
+@app.route('/api/meals/copy-week', methods=['POST'])
+def copy_week():
+    data = request.json
+    src = data.get('from_week')
+    dst = data.get('to_week')
+    if not src or not dst:
+        return jsonify({'error': 'from_week and to_week required'}), 400
+    src_meals = Meal.query.filter_by(week=src).all()
+    copied = 0
+    for sm in src_meals:
+        existing = Meal.query.filter_by(week=dst, day=sm.day, slot=sm.slot).first()
+        if existing:
+            existing.title = sm.title
+            existing.notes = sm.notes
+            existing.ingredients = sm.ingredients
+        else:
+            db.session.add(Meal(week=dst, day=sm.day, slot=sm.slot,
+                                title=sm.title, notes=sm.notes, ingredients=sm.ingredients))
+        copied += 1
+    db.session.commit()
+    return jsonify({'copied': copied})
+
 @app.route('/api/backup')
 def backup_db():
     try:
@@ -472,4 +588,4 @@ def backup_db():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    app.run(debug=DEBUG, host='0.0.0.0', port=5000)

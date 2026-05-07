@@ -15,11 +15,30 @@
                 <i class="fas fa-broom"></i> Vider les cochés
             </button>
         </div>
+
+        <!-- Filtres catégories -->
+        <div class="shop-cats" id="shopCats">
+            <button class="shop-cat active" data-cat="">Tout</button>
+            <button class="shop-cat" data-cat="🥦 Légumes">🥦 Légumes</button>
+            <button class="shop-cat" data-cat="🍎 Fruits">🍎 Fruits</button>
+            <button class="shop-cat" data-cat="🥩 Viande">🥩 Viande</button>
+            <button class="shop-cat" data-cat="🐟 Poisson">🐟 Poisson</button>
+            <button class="shop-cat" data-cat="🥛 Produits laitiers">🥛 Laitiers</button>
+            <button class="shop-cat" data-cat="🧴 Hygiène">🧴 Hygiène</button>
+            <button class="shop-cat" data-cat="🥫 Épicerie">🥫 Épicerie</button>
+            <button class="shop-cat" data-cat="❄️ Surgelés">❄️ Surgelés</button>
+            <button class="shop-cat" data-cat="🍞 Boulangerie">🍞 Boulangerie</button>
+            <button class="shop-cat" data-cat="🧹 Entretien">🧹 Entretien</button>
+        </div>
+
         <ul class="todo-list" id="shoppingList">
             {% for item in shopping_items %}
-                <li class="todo-item {% if item.is_completed %}completed{% endif %}" data-id="{{ item.id }}">
+                <li class="todo-item {% if item.is_completed %}completed{% endif %}" data-id="{{ item.id }}" data-cat="{{ item.category or '' }}">
                     <input type="checkbox" id="item-{{ item.id }}" {% if item.is_completed %}checked{% endif %}>
-                    <label for="item-{{ item.id }}">{{ item.name }}</label>
+                    <label for="item-{{ item.id }}">
+                        {% if item.category %}<span style="font-size:0.72rem; background:rgba(128,128,128,0.12); border-radius:10px; padding:1px 6px; margin-right:5px;">{{ item.category }}</span>{% endif %}
+                        {{ item.name }}
+                    </label>
                     <button class="delete-btn" onclick="deleteShoppingItem({{ item.id }})"><i class="fas fa-trash"></i></button>
                 </li>
             {% endfor %}
@@ -27,8 +46,21 @@
                 <p id="emptyShopping" style="color:var(--sidebar-text);">La liste de courses est vide. Parfait !</p>
             {% endif %}
         </ul>
-        <form id="addShoppingForm" style="margin-top: 15px; display: flex; gap: 10px;">
-            <input type="text" id="newShoppingItem" placeholder="Ajouter un article..." required style="flex: 1; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(0,0,0,0.12); background:var(--card-bg); color:var(--text-color);">
+        <form id="addShoppingForm" style="margin-top: 15px; display: flex; gap: 10px; flex-wrap:wrap;">
+            <input type="text" id="newShoppingItem" placeholder="Ajouter un article..." required style="flex: 1; min-width:150px; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(128,128,128,0.2); background:var(--card-bg); color:var(--text-color);">
+            <select id="newShoppingCat" style="padding:0.8rem; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--card-bg); color:var(--text-color); font-size:0.88rem;">
+                <option value="">— Catégorie —</option>
+                <option>🥦 Légumes</option>
+                <option>🍎 Fruits</option>
+                <option>🥩 Viande</option>
+                <option>🐟 Poisson</option>
+                <option>🥛 Produits laitiers</option>
+                <option>🧴 Hygiène</option>
+                <option>🥫 Épicerie</option>
+                <option>❄️ Surgelés</option>
+                <option>🍞 Boulangerie</option>
+                <option>🧹 Entretien</option>
+            </select>
             <button type="submit" class="btn"><i class="fas fa-plus"></i></button>
         </form>
     </div>
@@ -37,6 +69,18 @@
 
 {% block scripts %}
 <script>
+// Filtres catégories
+document.querySelectorAll('.shop-cat').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.shop-cat').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cat = btn.dataset.cat;
+        document.querySelectorAll('#shoppingList .todo-item').forEach(li => {
+            li.style.display = (!cat || li.dataset.cat === cat) ? '' : 'none';
+        });
+    });
+});
+
 async function clearDoneItems() {
     const done = document.querySelectorAll('.todo-item.completed');
     if (done.length === 0) { showToast('Aucun article coché.', 'warning'); return; }
@@ -58,5 +102,20 @@ function updateShoppingCount() {
 document.addEventListener('change', (e) => {
     if (e.target.closest('.todo-item')) setTimeout(updateShoppingCount, 100);
 });
+
+// Patch add form to include category
+document.getElementById('addShoppingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('newShoppingItem').value.trim();
+    const category = document.getElementById('newShoppingCat').value;
+    if (!name) return;
+    const res = await fetch('/api/shopping', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name, category })
+    });
+    if (res.ok) { location.reload(); }
+}, { once: false });
+// Remove old generic handler from main.js for this page — override handled above
 </script>
 {% endblock %}

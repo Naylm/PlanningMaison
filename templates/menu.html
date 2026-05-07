@@ -17,6 +17,9 @@
         {% if week_key != today.strftime('%G-W%V') %}
         <a href="{{ url_for('menu_page') }}" class="btn" style="background:var(--secondary); padding:0.4rem 0.9rem; font-size:0.8rem;">Aujourd'hui</a>
         {% endif %}
+        <button class="btn" onclick="copyPrevWeek('{{ prev_week }}', '{{ week_key }}')" style="background:rgba(128,128,128,0.15); color:var(--text-color); padding:0.4rem 0.8rem; font-size:0.78rem;" title="Copier le menu de la semaine précédente">
+            <i class="fas fa-copy"></i> Copier sem. préc.
+        </button>
     </div>
 </div>
 
@@ -132,6 +135,21 @@ window.handleSaveMeal = async function(e) {
     if (res.ok) {
         closeModal('mealModal');
         location.reload();
+    }
+};
+
+window.copyPrevWeek = async function(fromWeek, toWeek) {
+    const confirmed = await customConfirm('Copier la semaine précédente', `Copier tous les repas de la semaine ${fromWeek} vers ${toWeek} ? Les repas existants seront écrasés.`);
+    if (!confirmed) return;
+    const res = await fetch('/api/meals/copy-week', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ from_week: fromWeek, to_week: toWeek })
+    });
+    if (res.ok) {
+        const data = await res.json();
+        showToast(`✅ ${data.copied} repas copiés !`);
+        setTimeout(() => location.reload(), 800);
     }
 };
 

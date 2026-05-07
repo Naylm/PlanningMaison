@@ -58,6 +58,9 @@
             <li class="nav-item {% if request.path == '/menu' %}active{% endif %}">
                 <a href="{{ url_for('menu_page') }}"><span>🍽️</span> Menu</a>
             </li>
+            <li class="nav-item {% if request.path == '/history' %}active{% endif %}">
+                <a href="{{ url_for('history_page') }}"><span>📈</span> Historique</a>
+            </li>
         </ul>
 
         <div class="sidebar-footer">
@@ -91,6 +94,9 @@
             <li class="{% if request.path == '/menu' %}active{% endif %}">
                 <a href="{{ url_for('menu_page') }}"><span class="nav-icon">🍽️</span>Menu</a>
             </li>
+            <li class="{% if request.path == '/history' %}active{% endif %}">
+                <a href="{{ url_for('history_page') }}"><span class="nav-icon">📈</span>Historique</a>
+            </li>
         </ul>
     </nav>
 
@@ -98,6 +104,10 @@
     <main class="main-content">
         <header style="padding-bottom: 1rem; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 1.5rem;">
             <h1 style="font-size: 1.5rem;">{% block page_title %}{% endblock %}</h1>
+            <div class="header-search" id="headerSearch" style="position:relative;">
+                <input type="text" id="globalSearch" placeholder="🔍 Rechercher..." autocomplete="off" style="padding:0.45rem 0.9rem; border-radius:20px; border:1px solid rgba(128,128,128,0.2); background:var(--card-bg); color:var(--text-color); font-size:0.88rem; width:200px; transition:width 0.2s;" onfocus="this.style.width='260px'" onblur="this.style.width='200px'">
+                <div id="searchResults" style="display:none; position:absolute; top:calc(100% + 6px); right:0; width:320px; background:var(--card-bg); border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.15); z-index:999; padding:0.5rem 0; max-height:400px; overflow-y:auto;"></div>
+            </div>
             <div class="header-actions">
                 {% if request.path == '/members' %}
                     <button class="btn" onclick="openModal('memberModal')"><i class="fas fa-plus"></i></button>

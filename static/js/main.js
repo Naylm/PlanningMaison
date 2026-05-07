@@ -1,9 +1,56 @@
 // ==========================================
 // Initialisation Globale
 // ==========================================
+// ==========================================
+// Recherche globale
+// ==========================================
+function initGlobalSearch() {
+    const input = document.getElementById('globalSearch');
+    const box = document.getElementById('searchResults');
+    if (!input || !box) return;
+    let timer;
+    const ICONS = { events: '📅', tasks: '✅', notes: '📝', shopping: '🛒' };
+    const LABELS = { events: 'Calendrier', tasks: 'Tâches', notes: 'Notes', shopping: 'Courses' };
+    const URLS = { events: '/calendar', tasks: '/tasks', notes: '/notes', shopping: '/shopping' };
+
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        const q = input.value.trim();
+        if (q.length < 2) { box.style.display = 'none'; return; }
+        timer = setTimeout(async () => {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const total = Object.values(data).reduce((a, b) => a + b.length, 0);
+            if (total === 0) {
+                box.innerHTML = '<div style="padding:0.8rem 1rem; color:var(--sidebar-text); font-size:0.88rem;">Aucun résultat</div>';
+                box.style.display = 'block';
+                return;
+            }
+            let html = '';
+            for (const [key, items] of Object.entries(data)) {
+                if (!items.length) continue;
+                html += `<div style="padding:4px 12px; font-size:0.72rem; font-weight:700; color:var(--sidebar-text); text-transform:uppercase; letter-spacing:0.05em; margin-top:4px;">${ICONS[key]} ${LABELS[key]}</div>`;
+                for (const item of items) {
+                    const label = item.title || item.name;
+                    const sub = item.start ? ` <span style="color:var(--sidebar-text);font-size:0.75rem;">${item.start.slice(0,10)}</span>` : (item.is_done ? ' ✅' : '') + (item.points ? ` ⭐${item.points}` : '');
+                    html += `<a href="${URLS[key]}" style="display:block; padding:6px 14px; font-size:0.88rem; color:var(--text-color); text-decoration:none; border-radius:6px; margin:1px 4px;" onmouseover="this.style.background='rgba(128,128,128,0.1)'" onmouseout="this.style.background=''">${label}${sub}</a>`;
+                }
+            }
+            box.innerHTML = html;
+            box.style.display = 'block';
+        }, 250);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#headerSearch')) box.style.display = 'none';
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initDarkMode();
     initSidebarToggle();
+    initGlobalSearch();
 
     if (document.getElementById('shoppingList')) initShoppingList();
     if (document.getElementById('calendar')) initCalendar();

@@ -1135,6 +1135,37 @@ body.dark-mode .fc .fc-button-primary:disabled {
     border: 1.5px solid rgba(128,128,128,0.12);
 }
 
+/* Shop category filters */
+.shop-cats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 1rem;
+}
+
+.shop-cat {
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1.5px solid rgba(128,128,128,0.2);
+    background: transparent;
+    color: var(--text-color);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.shop-cat.active,
+.shop-cat:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+/* Header search */
+.header-search { display: flex; align-items: center; }
+
+header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+
 @media (max-width: 900px) {
     .menu-grid {
         grid-template-columns: repeat(4, 1fr);
