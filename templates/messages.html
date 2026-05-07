@@ -113,35 +113,101 @@
 </style>
 
 <script>
+const msgList = document.getElementById('messagesList');
+
+function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' })
+        + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+}
+
+function renderBubble(m) {
+    const div = document.createElement('div');
+    div.className = 'msg-bubble' + (m.pinned ? ' msg-pinned' : '');
+    div.dataset.id = m.id;
+    const avatarInner = m.member_avatar
+        ? `<span>${m.member_avatar}</span>`
+        : `<span>🏡</span>`;
+    div.innerHTML = `
+        <div class="msg-avatar" style="background:${m.member_color || '#2eb49e'};">${avatarInner}</div>
+        <div class="msg-body">
+            <div class="msg-meta">
+                <strong>${m.member_name || 'Maison'}</strong>
+                <span class="text-muted" style="font-size:0.75rem;">${fmtDate(m.created_at)}</span>
+                ${m.pinned ? '<span style="color:#f59e0b;font-size:0.8rem;">📌 épinglé</span>' : ''}
+            </div>
+            <div class="msg-content">${m.content.replace(/</g,'&lt;')}</div>
+        </div>
+        <div class="msg-actions">
+            <button onclick="togglePin(${m.id},this)" title="Épingler" class="delete-btn" style="font-size:0.8rem;opacity:0.5;"><i class="fas fa-thumbtack"></i></button>
+            <button onclick="deleteMsg(${m.id},this)" title="Supprimer" class="delete-btn" style="font-size:0.8rem;opacity:0.4;"><i class="fas fa-trash"></i></button>
+        </div>`;
+    return div;
+}
+
+function rebuildList(msgs) {
+    msgList.innerHTML = '';
+    if (!msgs.length) {
+        msgList.innerHTML = '<p class="text-muted" style="text-align:center;padding:2rem 0;">Aucun message pour l\'instant. Dites bonjour ! 👋</p>';
+        return;
+    }
+    msgs.forEach(m => msgList.appendChild(renderBubble(m)));
+}
+
+async function loadMessages() {
+    try {
+        const res = await fetch('/api/messages');
+        if (!res.ok) return;
+        const msgs = await res.json();
+        const wasAtBottom = msgList.scrollHeight - msgList.scrollTop - msgList.clientHeight < 60;
+        rebuildList(msgs);
+        if (wasAtBottom) msgList.scrollTop = msgList.scrollHeight;
+    } catch(e) {}
+}
+
+// Envoi
 document.getElementById('msgForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const content = document.getElementById('msgContent').value.trim();
+    const textarea = document.getElementById('msgContent');
+    const content = textarea.value.trim();
     if (!content) return;
     const member_id = document.getElementById('msgMember').value || null;
+    const btn = e.target.querySelector('button[type="submit"]');
+    if (btn) btn.disabled = true;
     const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, member_id })
     });
     if (res.ok) {
-        document.getElementById('msgContent').value = '';
-        location.reload();
+        textarea.value = '';
+        await loadMessages();
+        msgList.scrollTop = msgList.scrollHeight;
     }
+    if (btn) btn.disabled = false;
+    textarea.focus();
 });
 
+// Épingler
 window.togglePin = async function(id, btn) {
     const res = await fetch(`/api/messages/${id}/pin`, { method: 'PUT' });
-    if (res.ok) location.reload();
+    if (res.ok) await loadMessages();
 };
 
+// Supprimer
 window.deleteMsg = async function(id, btn) {
     const bubble = btn.closest('.msg-bubble');
+    if (bubble) bubble.style.opacity = '0.4';
     const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
-    if (res.ok && bubble) bubble.remove();
+    if (res.ok) await loadMessages();
+    else if (bubble) bubble.style.opacity = '';
 };
 
-// Auto-scroll vers le bas
-const list = document.getElementById('messagesList');
-if (list) list.scrollTop = list.scrollHeight;
+// Chargement initial + scroll bas
+loadMessages().then(() => { msgList.scrollTop = msgList.scrollHeight; });
+
+// Polling toutes les 15s
+setInterval(loadMessages, 15000);
 </script>
 {% endblock %}
