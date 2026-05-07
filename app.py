@@ -845,8 +845,7 @@ def update_apply():
             print('[Update] Redémarrage...')
             import subprocess
             subprocess.Popen([sys.executable] + sys.argv,
-                             cwd=basedir,
-                             creationflags=getattr(subprocess, 'CREATE_NEW_CONSOLE', 0))
+                             cwd=basedir)
             os._exit(0)
 
         except Exception as e:
