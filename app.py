@@ -821,10 +821,14 @@ def update_apply():
             _update_available['flag'] = False
             print('[Update] Fichiers mis à jour.')
 
-            # 5. Redémarrer Flask (remplace le process courant)
+            # 5. Redémarrer Flask (compatible Windows + Linux)
             time.sleep(1)
             print('[Update] Redémarrage...')
-            os.execv(sys.executable, [sys.executable] + sys.argv)
+            import subprocess
+            subprocess.Popen([sys.executable] + sys.argv,
+                             cwd=basedir,
+                             creationflags=getattr(subprocess, 'CREATE_NEW_CONSOLE', 0))
+            os._exit(0)
 
         except Exception as e:
             print(f'[Update] Erreur lors de la mise à jour : {e}')
