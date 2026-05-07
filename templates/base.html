@@ -273,6 +273,30 @@
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- Bottom Navigation (mobile) -->
+    <nav class="bottom-nav">
+        <a href="{{ url_for('index') }}" class="{% if request.path == '/' %}active{% endif %}">
+            <i class="fas fa-home"></i>
+            <span>Accueil</span>
+        </a>
+        <a href="{{ url_for('tasks_page') }}" class="{% if request.path == '/tasks' %}active{% endif %}">
+            <i class="fas fa-check-circle"></i>
+            <span>Tâches</span>
+        </a>
+        <a href="{{ url_for('shopping_page') }}" class="{% if request.path == '/shopping' %}active{% endif %}">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Courses</span>
+        </a>
+        <a href="{{ url_for('messages_page') }}" class="{% if request.path == '/messages' %}active{% endif %}">
+            <i class="fas fa-comment-dots"></i>
+            <span>Messages</span>
+        </a>
+        <a href="{{ url_for('calendar_page') }}" class="{% if request.path == '/calendar' %}active{% endif %}">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Agenda</span>
+        </a>
+    </nav>
+
     <!-- JavaScript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}

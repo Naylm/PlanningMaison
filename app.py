@@ -143,6 +143,7 @@ class Task(db.Model):
     done_at = db.Column(db.DateTime, nullable=True)
     due_date = db.Column(db.DateTime, nullable=True)
     room = db.Column(db.String(50), nullable=True)
+    recurrence = db.Column(db.String(10), nullable=True)
     assignee = db.relationship('Member', foreign_keys=[assigned_to], backref=db.backref('assigned_tasks', lazy=True))
     doer = db.relationship('Member', foreign_keys=[done_by], backref=db.backref('done_tasks', lazy=True))
 
@@ -337,7 +338,8 @@ def add_task():
         points=int(data.get('points', 1)),
         assigned_to=data.get('assigned_to') or None,
         due_date=due,
-        room=data.get('room') or None
+        room=data.get('room') or None,
+        recurrence=data.get('recurrence') or None
     )
     db.session.add(task)
     db.session.commit()
@@ -356,6 +358,8 @@ def update_task(task_id):
         except: task.due_date = None
     if 'room' in data:
         task.room = data.get('room') or None
+    if 'recurrence' in data:
+        task.recurrence = data.get('recurrence') or None
     db.session.commit()
     return jsonify(_task_to_dict(task))
 
@@ -368,9 +372,29 @@ def complete_task(task_id):
     task.done_by = data.get('member_id') or None
     task.done_at = datetime.now(timezone.utc)
     doer = Member.query.get(task.done_by) if task.done_by else None
-    doer_name = doer.name if doer else 'Quelqu\u2019un'
+    doer_name = doer.name if doer else 'Quelqu’un'
     pts_label = 'pts' if task.points > 1 else 'pt'
-    _log(f"\u2705 {doer_name} a accompli \"{task.title}\" (+{task.points} {pts_label})", task.done_by)
+    _log(f"✅ {doer_name} a accompli \"{task.title}\" (+{task.points} {pts_label})", task.done_by)
+    # Auto-recréation si tâche récurrente
+    if task.recurrence:
+        from datetime import timedelta
+        next_due = None
+        if task.due_date:
+            if task.recurrence == 'daily':
+                next_due = task.due_date + timedelta(days=1)
+            elif task.recurrence == 'weekly':
+                next_due = task.due_date + timedelta(weeks=1)
+            elif task.recurrence == 'monthly':
+                next_due = task.due_date + timedelta(days=30)
+        new_task = Task(
+            title=task.title,
+            points=task.points,
+            assigned_to=task.assigned_to,
+            room=task.room,
+            recurrence=task.recurrence,
+            due_date=next_due
+        )
+        db.session.add(new_task)
     db.session.commit()
     return jsonify(_task_to_dict(task))
 
@@ -499,7 +523,8 @@ def _task_to_dict(task):
         'doer_name': task.doer.name if task.doer else None,
         'done_at': task.done_at.isoformat() if task.done_at else None,
         'due_date': task.due_date.isoformat() if task.due_date else None,
-        'room': task.room
+        'room': task.room,
+        'recurrence': task.recurrence or ''
     }
 
 def _event_occurrences(event, all_members, horizon_days=180):
@@ -814,6 +839,7 @@ def _auto_migrate():
         'ALTER TABLE event ADD COLUMN parent_id INTEGER',
         'ALTER TABLE task ADD COLUMN due_date DATETIME',
         'ALTER TABLE task ADD COLUMN room VARCHAR(50)',
+        'ALTER TABLE task ADD COLUMN recurrence VARCHAR(10)',
     ]
     # Nouvelle table messages
     cur.execute('''

@@ -751,11 +751,12 @@ async function handleAddTask(e) {
     const assigned_to = document.getElementById('taskMember')?.value || '';
     const due_date = document.getElementById('taskDue')?.value || '';
     const room = document.getElementById('taskRoom')?.value || '';
+    const recurrence = document.getElementById('taskRecurrence')?.value || '';
 
     const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, points: parseInt(points), assigned_to, due_date: due_date || null, room: room || null })
+        body: JSON.stringify({ title, points: parseInt(points), assigned_to, due_date: due_date || null, room: room || null, recurrence: recurrence || null })
     });
     if (res.ok) {
         closeModal('taskModal');
@@ -776,6 +777,8 @@ window.openEditTask = function(btn) {
     if (sel) sel.value = d.member || '';
     const roomSel = document.getElementById('editTaskRoom');
     if (roomSel) roomSel.value = d.room || '';
+    const recurrSel = document.getElementById('editTaskRecurrence');
+    if (recurrSel) recurrSel.value = d.recurrence || '';
     openModal('editTaskModal');
 };
 
@@ -787,10 +790,11 @@ async function handleEditTask(e) {
     const assigned_to = document.getElementById('editTaskMember')?.value || '';
     const due_date = document.getElementById('editTaskDue')?.value || '';
     const room = document.getElementById('editTaskRoom')?.value || '';
+    const recurrence = document.getElementById('editTaskRecurrence')?.value || '';
     const res = await fetch(`/api/tasks/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, points: parseInt(points), assigned_to, due_date: due_date || null, room: room || null })
+        body: JSON.stringify({ title, points: parseInt(points), assigned_to, due_date: due_date || null, room: room || null, recurrence: recurrence || null })
     });
     if (res.ok) {
         closeModal('editTaskModal');

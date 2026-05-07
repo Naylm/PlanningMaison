@@ -55,6 +55,9 @@
                     {% if task.room %}
                     <div class="task-due"><i class="fas fa-map-marker-alt"></i> {{ task.room }}</div>
                     {% endif %}
+                    {% if task.recurrence %}
+                    <div class="task-due" style="color:var(--primary);"><i class="fas fa-redo"></i> {% if task.recurrence == 'daily' %}Quotidien{% elif task.recurrence == 'weekly' %}Hebdomadaire{% elif task.recurrence == 'monthly' %}Mensuel{% endif %}</div>
+                    {% endif %}
                 </div>
 
                 <span class="points-badge">⭐ {{ task.points }} pt{{ 's' if task.points > 1 }}</span>
@@ -66,6 +69,7 @@
                     data-member="{{ task.assigned_to or '' }}"
                     data-due="{{ task.due_date.strftime('%Y-%m-%dT%H:%M') if task.due_date else '' }}"
                     data-room="{{ task.room or '' }}"
+                    data-recurrence="{{ task.recurrence or '' }}"
                     style="opacity:0.5; font-size:0.85rem; color:var(--primary);">
                     <i class="fas fa-edit"></i>
                 </button>
@@ -222,6 +226,15 @@
                     <option>📦 Divers</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label>Récurrence</label>
+                <select id="editTaskRecurrence" style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid rgba(0,0,0,0.1); background:var(--card-bg); color:var(--text-color);">
+                    <option value="">🟤 Aucune</option>
+                    <option value="daily">🔁 Quotidien</option>
+                    <option value="weekly">🔄 Hebdomadaire</option>
+                    <option value="monthly">📅 Mensuel</option>
+                </select>
+            </div>
             <button type="submit" class="btn w-full">Enregistrer</button>
         </form>
     </div>
@@ -271,6 +284,15 @@
                     <option>🧹 Entrée / couloir</option>
                     <option>🌱 Extérieur</option>
                     <option>📦 Divers</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Récurrence</label>
+                <select id="taskRecurrence" style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid rgba(0,0,0,0.1); background:var(--card-bg); color:var(--text-color);">
+                    <option value="">🟤 Aucune</option>
+                    <option value="daily">🔁 Quotidien</option>
+                    <option value="weekly">🔄 Hebdomadaire</option>
+                    <option value="monthly">📅 Mensuel</option>
                 </select>
             </div>
             <button type="submit" class="btn w-full">Ajouter la tâche</button>
