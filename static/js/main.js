@@ -669,11 +669,13 @@ async function handleAddEvent(e) {
     const start_time = localInputToUTC(document.getElementById('eventStart').value);
     const end_time = localInputToUTC(document.getElementById('eventEnd').value);
     const member_ids = getCheckedMemberIds('eventMemberChecks');
+    const recurrence = document.getElementById('eventRecurrence')?.value || null;
+    const recurrence_end = localInputToUTC(document.getElementById('eventRecurrenceEnd')?.value || '') || null;
 
     const res = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, start_time, end_time, member_ids })
+        body: JSON.stringify({ title, start_time, end_time, member_ids, recurrence, recurrence_end })
     });
     if (res.ok) {
         if(window.fcCalendar) window.fcCalendar.refetchEvents();
@@ -762,6 +764,23 @@ window.resetPoints = async function() {
         setTimeout(() => location.reload(), 800);
     }
 }
+
+window.archiveNote = async function(id) {
+    const res = await fetch(`/api/notes/${id}/archive`, { method: 'PUT' });
+    if (res.ok) {
+        const el = document.querySelector(`.note-card[data-id="${id}"]`);
+        if (el) el.remove();
+        showToast('📦 Note archivée');
+    }
+};
+
+window.unarchiveNote = async function(id) {
+    const res = await fetch(`/api/notes/${id}/unarchive`, { method: 'PUT' });
+    if (res.ok) {
+        showToast('✅ Note restaurée');
+        setTimeout(() => location.reload(), 600);
+    }
+};
 
 window.triggerBackup = async function() {
     showToast('Sauvegarde en cours...', 'info');

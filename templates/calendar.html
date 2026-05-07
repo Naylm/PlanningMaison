@@ -44,6 +44,19 @@
                     {% endfor %}
                 </div>
             </div>
+            <div class="form-group">
+                <label>Récurrence</label>
+                <select id="eventRecurrence" style="padding:0.8rem; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--card-bg); color:var(--text-color); width:100%;" onchange="document.getElementById('recurrenceEndGroup').style.display=this.value&&this.value!='none'?'':'none'">
+                    <option value="">Aucune récurrence</option>
+                    <option value="daily">Tous les jours</option>
+                    <option value="weekly">Toutes les semaines</option>
+                    <option value="monthly">Tous les mois</option>
+                </select>
+            </div>
+            <div class="form-group" id="recurrenceEndGroup" style="display:none;">
+                <label>Répéter jusqu'au (optionnel)</label>
+                <input type="date" id="eventRecurrenceEnd">
+            </div>
             <button type="submit" class="btn" style="width:100%;justify-content:center;">Enregistrer au calendrier</button>
         </form>
     </div>

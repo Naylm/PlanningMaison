@@ -2,11 +2,20 @@ import sqlite3
 conn = sqlite3.connect('fredo.db')
 cur = conn.cursor()
 
-try:
-    cur.execute('ALTER TABLE shopping_item ADD COLUMN category VARCHAR(50)')
-    print('Added: shopping_item.category')
-except Exception as e:
-    print(f'Skip: {e}')
+migrations = [
+    ('ALTER TABLE shopping_item ADD COLUMN category VARCHAR(50)', 'shopping_item.category'),
+    ('ALTER TABLE note ADD COLUMN archived BOOLEAN DEFAULT 0', 'note.archived'),
+    ('ALTER TABLE event ADD COLUMN recurrence VARCHAR(10)', 'event.recurrence'),
+    ('ALTER TABLE event ADD COLUMN recurrence_end DATETIME', 'event.recurrence_end'),
+    ('ALTER TABLE event ADD COLUMN parent_id INTEGER', 'event.parent_id'),
+]
+
+for sql, name in migrations:
+    try:
+        cur.execute(sql)
+        print(f'Added: {name}')
+    except Exception as e:
+        print(f'Skip {name}: {e}')
 
 cur.execute('''CREATE TABLE IF NOT EXISTS activity_log (
     id INTEGER PRIMARY KEY,

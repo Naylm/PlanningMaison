@@ -13,15 +13,43 @@
             {% for note in notes %}
                 <div class="note-card" style="background-color: {{ note.color }};" data-id="{{ note.id }}">
                     <div class="note-actions" style="position: absolute; top: 10px; right: 10px; display: flex; gap: 5px;">
-                        <button class="btn" onclick="editNote({{ note.id }}, '{{ note.title|replace("'", "\\'") }}', '{{ note.content|replace("'", "\\'")|replace("\n", "\\n") }}', '{{ note.color }}')" style="padding: 2px 8px; font-size: 0.7rem; background-color: rgba(128,128,128,0.25);"><i class="fas fa-edit"></i></button>
-                        <button class="btn" onclick="deleteNote({{ note.id }})" style="padding: 2px 8px; font-size: 0.7rem; background-color: rgba(128,128,128,0.25);"><i class="fas fa-trash"></i></button>
+                        <button class="btn" onclick="editNote({{ note.id }}, '{{ note.title|replace("'", "\\'") }}', '{{ note.content|replace("'", "\\'")|replace("\n", "\\n") }}', '{{ note.color }}')" style="padding: 2px 8px; font-size: 0.7rem; background-color: rgba(128,128,128,0.25);" title="Modifier"><i class="fas fa-edit"></i></button>
+                        <button class="btn" onclick="archiveNote({{ note.id }})" style="padding: 2px 8px; font-size: 0.7rem; background-color: rgba(128,128,128,0.25);" title="Archiver"><i class="fas fa-archive"></i></button>
+                        <button class="btn" onclick="deleteNote({{ note.id }})" style="padding: 2px 8px; font-size: 0.7rem; background-color: rgba(128,128,128,0.25);" title="Supprimer"><i class="fas fa-trash"></i></button>
                     </div>
                     <h3 style="color: {{ note.color|text_color }};">{{ note.title }}</h3>
                     <p style="color: {{ note.color|text_color }}; opacity: 0.85;">{{ note.content }}</p>
                 </div>
             {% endfor %}
+            {% if not notes %}
+                <p style="color:var(--sidebar-text); grid-column:1/-1;">Aucune note active.</p>
+            {% endif %}
         </div>
     </div>
+
+    {% if archived %}
+    <div class="card" style="margin-top:1.5rem; grid-column: 1 / -1; opacity:0.8;">
+        <details>
+            <summary style="cursor:pointer; font-weight:600; font-size:0.95rem; padding:0.3rem 0; list-style:none; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-archive" style="color:var(--sidebar-text);"></i>
+                Archives <span style="font-size:0.82rem; color:var(--sidebar-text); font-weight:400;">({{ archived|length }} note{{ 's' if archived|length > 1 }})</span>
+            </summary>
+            <div class="notes-grid" style="margin-top:1rem;">
+                {% for note in archived %}
+                <div class="note-card" style="background-color: {{ note.color }}; opacity:0.75;" data-id="{{ note.id }}">
+                    <div class="note-actions" style="position:absolute; top:10px; right:10px; display:flex; gap:5px;">
+                        <button class="btn" onclick="unarchiveNote({{ note.id }})" style="padding:2px 8px; font-size:0.7rem; background-color:rgba(128,128,128,0.25);" title="Restaurer"><i class="fas fa-undo"></i></button>
+                        <button class="btn" onclick="deleteNote({{ note.id }})" style="padding:2px 8px; font-size:0.7rem; background-color:rgba(128,128,128,0.25);" title="Supprimer définitivement"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <h3 style="color: {{ note.color|text_color }};">{{ note.title }}</h3>
+                    <p style="color: {{ note.color|text_color }}; opacity:0.85; font-size:0.85rem;">{{ note.content }}</p>
+                    <div style="font-size:0.7rem; color:{{ note.color|text_color }}; opacity:0.6; margin-top:6px;">Archivée le {{ note.created_at.strftime('%d/%m/%Y') }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </details>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Modal Modifier Note -->

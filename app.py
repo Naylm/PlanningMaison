@@ -49,6 +49,7 @@ class Note(db.Model):
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     color = db.Column(db.String(20), default='#ffffff')
+    archived = db.Column(db.Boolean, default=False)
 
 class ShoppingItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,6 +80,9 @@ class Event(db.Model):
     end_time = db.Column(db.DateTime, nullable=False)
     member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
     member_ids = db.Column(db.Text, nullable=True)
+    recurrence = db.Column(db.String(10), nullable=True)  # none | daily | weekly | monthly
+    recurrence_end = db.Column(db.DateTime, nullable=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=True)
     member = db.relationship('Member', backref=db.backref('events', lazy=True))
 
     def get_member_ids(self):
@@ -174,8 +178,9 @@ def shopping_page():
 
 @app.route('/notes')
 def notes_page():
-    notes = Note.query.order_by(Note.created_at.desc()).all()
-    return render_template('notes.html', notes=notes)
+    notes = Note.query.filter_by(archived=False).order_by(Note.created_at.desc()).all()
+    archived = Note.query.filter_by(archived=True).order_by(Note.created_at.desc()).all()
+    return render_template('notes.html', notes=notes, archived=archived)
 
 @app.route('/tasks')
 def tasks_page():
@@ -267,6 +272,20 @@ def update_note(note_id):
 def delete_note(note_id):
     note = Note.query.get_or_404(note_id)
     db.session.delete(note)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/notes/<int:note_id>/archive', methods=['PUT'])
+def archive_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    note.archived = True
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/notes/<int:note_id>/unarchive', methods=['PUT'])
+def unarchive_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    note.archived = False
     db.session.commit()
     return jsonify({'success': True})
 
@@ -429,34 +448,61 @@ def _task_to_dict(task):
         'done_at': task.done_at.isoformat() if task.done_at else None
     }
 
-# API: Événements (Calendrier)
-@app.route('/api/events', methods=['GET'])
-def get_events():
-    import json as _json
-    events = Event.query.all()
-    all_members = {m.id: m for m in Member.query.all()}
-    events_data = []
-    for event in events:
-        ids = event.get_member_ids()
-        members_info = [all_members[i] for i in ids if i in all_members]
-        color = members_info[0].color if members_info else '#4a90e2'
-        names = ', '.join(m.name for m in members_info) if members_info else 'Tous'
-        avatars = ' '.join(m.avatar for m in members_info) if members_info else '🏡'
-        events_data.append({
+def _event_occurrences(event, all_members, horizon_days=180):
+    from datetime import timedelta as _td
+    ids = event.get_member_ids()
+    members_info = [all_members[i] for i in ids if i in all_members]
+    color = members_info[0].color if members_info else '#4a90e2'
+    names = ', '.join(m.name for m in members_info) if members_info else 'Tous'
+    avatars = ' '.join(m.avatar for m in members_info) if members_info else '🏡'
+    duration = event.end_time - event.start_time
+    rec = event.recurrence
+    results = []
+    if not rec or rec == 'none':
+        results.append(event.start_time)
+    else:
+        horizon = datetime.utcnow() + _td(days=horizon_days)
+        end_limit = min(event.recurrence_end, horizon) if event.recurrence_end else horizon
+        cur = event.start_time
+        steps = {'daily': _td(days=1), 'weekly': _td(weeks=1)}
+        count = 0
+        while cur <= end_limit and count < 365:
+            results.append(cur)
+            count += 1
+            if rec == 'daily': cur += _td(days=1)
+            elif rec == 'weekly': cur += _td(weeks=1)
+            elif rec == 'monthly':
+                m2 = cur.month % 12 + 1
+                y2 = cur.year + (1 if cur.month == 12 else 0)
+                try: cur = cur.replace(year=y2, month=m2)
+                except: break
+            else: break
+    out = []
+    for start in results:
+        out.append({
             'id': event.id,
             'title': event.title,
-            'start': event.start_time.isoformat() + 'Z',
-            'end': event.end_time.isoformat() + 'Z',
+            'start': start.isoformat() + 'Z',
+            'end': (start + duration).isoformat() + 'Z',
             'backgroundColor': color,
             'borderColor': color,
             'extendedProps': {
-                'member_ids': ids,
-                'member_id': event.member_id,
-                'member_name': names,
-                'member_avatar': avatars,
+                'member_ids': ids, 'member_id': event.member_id,
+                'member_name': names, 'member_avatar': avatars,
+                'recurrence': rec or 'none',
                 'members_info': [{'id': m.id, 'name': m.name, 'avatar': m.avatar, 'color': m.color} for m in members_info]
             }
         })
+    return out
+
+# API: Événements (Calendrier)
+@app.route('/api/events', methods=['GET'])
+def get_events():
+    events = Event.query.filter_by(parent_id=None).all()
+    all_members = {m.id: m for m in Member.query.all()}
+    events_data = []
+    for event in events:
+        events_data.extend(_event_occurrences(event, all_members))
     return jsonify(events_data)
 
 @app.route('/api/events', methods=['POST'])
@@ -467,14 +513,17 @@ def add_event():
     ids = [int(i) for i in data.get('member_ids', []) if i]
     if not ids and data.get('member_id'):
         ids = [int(data['member_id'])]
-    new_event = Event(title=data['title'], start_time=start_time, end_time=end_time)
+    rec = data.get('recurrence') or None
+    rec_end = datetime.fromisoformat(data['recurrence_end']) if data.get('recurrence_end') else None
+    new_event = Event(title=data['title'], start_time=start_time, end_time=end_time,
+                      recurrence=rec, recurrence_end=rec_end)
     new_event.set_member_ids(ids)
     db.session.add(new_event)
     db.session.commit()
     color = new_event.member.color if new_event.member else '#4a90e2'
     return jsonify({'id': new_event.id, 'title': new_event.title,
         'start': new_event.start_time.isoformat() + 'Z', 'end': new_event.end_time.isoformat() + 'Z',
-        'backgroundColor': color, 'borderColor': color})
+        'backgroundColor': color, 'borderColor': color, 'recurrence': rec})
 
 @app.route('/api/events/<int:event_id>', methods=['PUT'])
 def update_event(event_id):
