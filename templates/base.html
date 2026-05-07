@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planning maison - {% block title %}Accueil{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,7 +18,7 @@
     
     {% block head %}{% endblock %}
 </head>
-<body>
+<body data-page="{% if request.path == '/' %}dashboard{% elif request.path == '/shopping' %}shopping{% elif request.path == '/tasks' %}tasks{% elif request.path == '/notes' %}notes{% elif request.path == '/members' %}members{% elif request.path == '/calendar' %}calendar{% else %}other{% endif %}">
 
     <!-- Hamburger button (mobile only) -->
     <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menu">
@@ -229,6 +230,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Indicateur mise à jour en attente (modal ouvert) -->
+    <div id="pollUpdateBadge" style="display:none; position:fixed; bottom:80px; right:20px; z-index:9999; background:var(--primary); color:#fff; padding:0.6rem 1.1rem; border-radius:24px; font-size:0.85rem; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,0.18); cursor:pointer; animation:pulse 1.5s infinite;" onclick="location.reload()"><i class="fas fa-sync-alt" style="margin-right:6px;"></i> Données mises à jour — Cliquer pour rafraîchir</div>
 
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>

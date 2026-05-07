@@ -416,6 +416,25 @@ def get_activity():
 def get_leaderboard():
     return jsonify(_get_leaderboard())
 
+@app.route('/api/poll')
+def poll_data():
+    shopping_count = ShoppingItem.query.filter_by(is_completed=False).count()
+    shopping_last = db.session.query(func.max(ShoppingItem.id)).scalar() or 0
+    tasks_pending = Task.query.filter_by(is_done=False).count()
+    tasks_last = db.session.query(func.max(Task.id)).scalar() or 0
+    tasks_done_last = db.session.query(func.max(Task.done_at)).filter(Task.is_done == True).scalar()
+    notes_count = Note.query.filter_by(archived=False).count()
+    notes_last = db.session.query(func.max(Note.id)).scalar() or 0
+    members_last = db.session.query(func.max(Member.id)).scalar() or 0
+    leaderboard_sig = db.session.query(func.sum(Task.points)).filter(Task.is_done == True).scalar() or 0
+    return jsonify({
+        'shopping': {'count': shopping_count, 'last_id': shopping_last},
+        'tasks': {'pending': tasks_pending, 'last_id': tasks_last, 'last_done': str(tasks_done_last)},
+        'notes': {'count': notes_count, 'last_id': notes_last},
+        'members': {'last_id': members_last},
+        'leaderboard': {'sig': leaderboard_sig},
+    })
+
 def _get_leaderboard():
     now = datetime.now(timezone.utc)
     members = Member.query.all()

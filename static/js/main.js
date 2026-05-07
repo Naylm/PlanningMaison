@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDarkMode();
     initSidebarToggle();
     initGlobalSearch();
+    initDataPolling();
 
     if (document.getElementById('shoppingList')) initShoppingList();
     if (document.getElementById('calendar')) initCalendar();
@@ -209,6 +210,11 @@ window.closeModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
     modal.classList.remove('show');
+    const badge = document.getElementById('pollUpdateBadge');
+    if (badge && badge.style.display !== 'none') {
+        const anyOpen = document.querySelectorAll('.modal.show').length > 0;
+        if (!anyOpen) location.reload();
+    }
 }
 
 window.onclick = function(event) {
@@ -770,6 +776,65 @@ window.resetPoints = async function() {
         showToast('Points réinitialisés ✅');
         setTimeout(() => location.reload(), 800);
     }
+}
+
+// ==========================================
+// Polling temps réel (multi-utilisateurs)
+// ==========================================
+function initDataPolling() {
+    const INTERVAL = 15000;
+    const PAGE = document.body.dataset.page || '';
+    const WATCH = {
+        shopping: !!document.getElementById('shoppingList'),
+        tasks: !!document.querySelector('.task-item, #addTaskForm'),
+        notes: !!document.getElementById('notesList'),
+        members: !!document.querySelector('.member-card, #addMemberForm'),
+        dashboard: PAGE === 'dashboard',
+    };
+
+    if (!Object.values(WATCH).some(Boolean)) return;
+
+    let lastSnapshot = null;
+    let reloadPending = false;
+    const POLL_KEYS = [];
+    if (WATCH.shopping || WATCH.dashboard) POLL_KEYS.push('shopping');
+    if (WATCH.tasks || WATCH.dashboard) POLL_KEYS.push('tasks', 'leaderboard');
+    if (WATCH.notes || WATCH.dashboard) POLL_KEYS.push('notes');
+    if (WATCH.members) POLL_KEYS.push('members');
+
+    function snapshot(data) {
+        return POLL_KEYS.map(k => JSON.stringify(data[k])).join('|');
+    }
+
+    function isModalOpen() {
+        return document.querySelectorAll('.modal.show').length > 0;
+    }
+
+    async function poll() {
+        if (reloadPending) return;
+        try {
+            const res = await fetch('/api/poll');
+            if (!res.ok) return;
+            const data = await res.json();
+            const current = snapshot(data);
+            if (lastSnapshot === null) {
+                lastSnapshot = current;
+                return;
+            }
+            if (current !== lastSnapshot) {
+                lastSnapshot = current;
+                if (!isModalOpen()) {
+                    reloadPending = true;
+                    location.reload();
+                } else {
+                    const indicator = document.getElementById('pollUpdateBadge');
+                    if (indicator) indicator.style.display = '';
+                }
+            }
+        } catch (e) {}
+    }
+
+    setInterval(poll, INTERVAL);
 }
 
 // ==========================================
