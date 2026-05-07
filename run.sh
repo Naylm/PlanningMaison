@@ -8,8 +8,8 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# ── Se placer à la RACINE du projet (parent de scripts/) ─
-cd "$(dirname "$0")/.."
+# ── Se placer dans le dossier du script (racine du projet) ─
+cd "$(dirname "$0")"
 
 echo
 echo -e "${BLUE} ============================================${NC}"

@@ -7,8 +7,8 @@ echo    Planning Maison  -  Lancement
 echo  ============================================
 echo.
 
-:: Aller a la RACINE du projet (dossier parent de scripts/)
-cd /d "%~dp0.."
+:: Aller dans le dossier du script (racine du projet)
+cd /d "%~dp0"
 
 :: ── 1. Python ──────────────────────────────────────
 echo  [1/4] Verification de Python...
