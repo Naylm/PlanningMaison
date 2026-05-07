@@ -775,7 +775,7 @@ window.resetPoints = async function() {
 // ==========================================
 // Mise à jour automatique
 // ==========================================
-(function initUpdatePoller() {
+function initUpdatePoller() {
     async function checkUpdate() {
         try {
             const res = await fetch('/api/update/check');
@@ -791,7 +791,11 @@ window.resetPoints = async function() {
     }
     checkUpdate();
     setInterval(checkUpdate, 10 * 60 * 1000);
-})();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initUpdatePoller();
+});
 
 window.openUpdateModal = function() {
     openModal('updateModal');
