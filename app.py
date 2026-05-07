@@ -723,7 +723,7 @@ GITHUB_REPO = 'Naylm/PlanningMaison'
 GITHUB_API  = f'https://api.github.com/repos/{GITHUB_REPO}/commits/main'
 GITHUB_ZIP  = f'https://github.com/{GITHUB_REPO}/archive/refs/heads/main.zip'
 VERSION_FILE = os.path.join(basedir, 'version.txt')
-UPDATE_CHECK_INTERVAL = 10 * 60  # 10 minutes
+UPDATE_CHECK_INTERVAL = 2 * 60  # 2 minutes
 
 # Conservés lors de la mise à jour
 PRESERVE = {'fredo.db', 'backups', 'venv', '.env', 'version.txt', 'scripts', 'docs'}
