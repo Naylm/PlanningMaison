@@ -726,7 +726,7 @@ VERSION_FILE = os.path.join(basedir, 'version.txt')
 UPDATE_CHECK_INTERVAL = 10 * 60  # 10 minutes
 
 # Conservés lors de la mise à jour
-PRESERVE = {'fredo.db', 'backups', 'venv', '.env', 'version.txt'}
+PRESERVE = {'fredo.db', 'backups', 'venv', '.env', 'version.txt', 'scripts', 'docs'}
 
 _update_available = {'flag': False, 'sha': '', 'message': ''}
 

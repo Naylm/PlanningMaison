@@ -1,5 +1,8 @@
 import sqlite3
-conn = sqlite3.connect('fredo.db')
+import os
+
+db_path = os.path.join(os.path.dirname(__file__), '..', 'fredo.db')
+conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
 migrations = [

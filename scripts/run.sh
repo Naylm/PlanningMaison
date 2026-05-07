@@ -8,22 +8,14 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# ── Se placer dans le dossier du script ──────────────────
-cd "$(dirname "$0")"
+# ── Se placer à la RACINE du projet (parent de scripts/) ─
+cd "$(dirname "$0")/.."
 
 echo
 echo -e "${BLUE} ============================================${NC}"
 echo -e "${BLUE}   Planning Maison  -  Lancement             ${NC}"
 echo -e "${BLUE} ============================================${NC}"
 echo
-
-# ── Ouvrir le guide utilisateur ──────────────────────────
-echo -e " Ouverture du guide utilisateur..."
-if command -v xdg-open &>/dev/null; then
-    xdg-open GUIDE_UTILISATEUR.md 2>/dev/null || true
-elif command -v open &>/dev/null; then
-    open GUIDE_UTILISATEUR.md 2>/dev/null || true
-fi
 
 # ── 1. Python ────────────────────────────────────────────
 echo -e " [1/4] Vérification de Python..."
